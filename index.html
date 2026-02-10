@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>英文雲端即時測驗系統 - 完整測驗版</title>
+    <title>英文雲端即時測驗系統 - 完整管理版</title>
     <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-database-compat.js"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -38,15 +38,15 @@
         const db = firebase.database();
 
         const quizData = [
-            { id: 1, question: "The Great Wall is an _______ structure built thousands of years ago.", options: ["ancient", "antique", "previous", "precise"], correct: "ancient", explanation: "Ancient 指「古代的」，用來形容數千年前的建築。" },
-            { id: 2, question: "Scientists are working hard to develop an _______ to the new virus.", options: ["ancestor", "antibody", "antonym", "antidote"], correct: "antibody", explanation: "Antibody 是「抗體」，是用來對抗病毒的免疫物質。" },
-            { id: 3, question: "We should take every _______ to ensure our safety during the trip.", options: ["precaution", "preference", "presence", "prediction"], correct: "precaution", explanation: "Precaution 指「防範措施/預防措施」。" },
-            { id: 4, question: "It is difficult to _______ the weather accurately a month in advance.", options: ["prevent", "preserve", "predict", "prepare"], correct: "predict", explanation: "Predict 指「預測/預知」未來的事。" },
-            { id: 5, question: "This shop sells _______ furniture from the 19th century.", options: ["antique", "ancient", "previous", "present"], correct: "antique", explanation: "Antique 指「古董」，通常指有價值的古老物品。" },
-            { id: 6, question: "Her _______ for classical music makes her different from her peers.", options: ["presence", "preference", "precaution", "precede"], correct: "preference", explanation: "Preference 指「偏好/優先選擇」。" },
-            { id: 7, question: "The doctor prescribed a course of _______ to treat the infection.", options: ["antidote", "antonyms", "antibiotics", "ancestors"], correct: "antibiotics", explanation: "Antibiotic 是「抗生素」，用於治療細菌感染。" },
-            { id: 8, question: "Please _______ for the meeting by reading the report beforehand.", options: ["prepare", "preserve", "prevent", "preview"], correct: "prepare", explanation: "Prepare 指「準備」，是預先的動作。" },
-            { id: 9, question: "The guards try to _______ people from entering the building without a pass.", options: ["precede", "predict", "preserve", "prevent"], correct: "prevent", explanation: "Prevent 指「防止/預防」某事發生。" },
+            { id: 1, question: "The Great Wall is an _______ structure built thousands of years ago.", options: ["ancient", "antique", "previous", "precise"], correct: "ancient", explanation: "Ancient 指「古代的」。" },
+            { id: 2, question: "Scientists are working hard to develop an _______ to the new virus.", options: ["ancestor", "antibody", "antonym", "antidote"], correct: "antibody", explanation: "Antibody 是「抗體」。" },
+            { id: 3, question: "We should take every _______ to ensure our safety during the trip.", options: ["precaution", "preference", "presence", "prediction"], correct: "precaution", explanation: "Precaution 指「防範措施」。" },
+            { id: 4, question: "It is difficult to _______ the weather accurately a month in advance.", options: ["prevent", "preserve", "predict", "prepare"], correct: "predict", explanation: "Predict 指「預測」。" },
+            { id: 5, question: "This shop sells _______ furniture from the 19th century.", options: ["antique", "ancient", "previous", "present"], correct: "antique", explanation: "Antique 指「古董」。" },
+            { id: 6, question: "Her _______ for classical music makes her different from her peers.", options: ["presence", "preference", "precaution", "precede"], correct: "preference", explanation: "Preference 指「偏好」。" },
+            { id: 7, question: "The doctor prescribed a course of _______ to treat the infection.", options: ["antidote", "antonyms", "antibiotics", "ancestors"], correct: "antibiotics", explanation: "Antibiotic 是「抗生素」。" },
+            { id: 8, question: "Please _______ for the meeting by reading the report beforehand.", options: ["prepare", "preserve", "prevent", "preview"], correct: "prepare", explanation: "Prepare 指「準備」。" },
+            { id: 9, question: "The guards try to _______ people from entering the building without a pass.", options: ["precede", "predict", "preserve", "prevent"], correct: "prevent", explanation: "Prevent 指「防止」。" },
             { id: 10, question: "In the sentence 'Happy is the _______ of Sad', what word fits?", options: ["antibody", "antonym", "ancestor", "antidote"], correct: "antonym", explanation: "Antonym 指「反義字」。" }
         ];
 
@@ -58,9 +58,7 @@
             const [selectedOption, setSelectedOption] = useState(null);
             const [allLogs, setAllLogs] = useState([]);
             const [expandedId, setExpandedId] = useState(null);
-            
-            // 用來暫存這次測驗的每一題結果
-            const sessionAnswersRef = useRef([]);
+            const [sessionAnswers, setSessionAnswers] = useState([]);
             const startTimeRef = useRef(null);
 
             useEffect(() => {
@@ -69,6 +67,8 @@
                     const data = snapshot.val();
                     if (data) {
                         setAllLogs(Object.entries(data).map(([id, val]) => ({ id, ...val })).reverse());
+                    } else {
+                        setAllLogs([]);
                     }
                 });
                 return () => logsRef.off();
@@ -79,45 +79,49 @@
                 const timeTaken = ((endTime - startTimeRef.current) / 1000).toFixed(2);
                 const isCorrect = choice === quizData[currentIdx].correct;
                 
-                // 暫存這一題
-                sessionAnswersRef.current.push({
+                const newAnswer = {
                     qText: quizData[currentIdx].question,
                     choice,
                     isCorrect,
                     timeTaken
-                });
-
+                };
+                
+                setSessionAnswers([...sessionAnswers, newAnswer]);
                 setSelectedOption(choice);
-                setStatus(isCorrect ? 'correct' : 'wrong');
+                setStatus('answered');
             };
 
             const finishQuiz = () => {
-                const totalCorrect = sessionAnswersRef.current.filter(a => a.isCorrect).length;
-                const totalTime = sessionAnswersRef.current.reduce((sum, a) => sum + parseFloat(a.timeTaken), 0).toFixed(1);
+                const totalCorrect = sessionAnswers.filter(a => a.isCorrect).length;
+                const totalTime = sessionAnswers.reduce((sum, a) => sum + parseFloat(a.timeTaken), 0).toFixed(1);
                 
                 const finalData = {
                     name: studentName,
                     timestamp: new Date().toLocaleString(),
                     correctRate: `${totalCorrect} / ${quizData.length}`,
                     totalTime: totalTime,
-                    details: sessionAnswersRef.current
+                    details: sessionAnswers
                 };
 
-                // 一次性上傳整個測驗
                 db.ref('quiz_sessions').push(finalData);
-                
-                // 重設狀態
-                sessionAnswersRef.current = [];
+                setSessionAnswers([]);
                 setView('login');
                 setCurrentIdx(0);
                 setStatus('idle');
+            };
+
+            const clearAllData = () => {
+                if (window.confirm("⚠️ 確定要刪除所有學生的作答紀錄嗎？此動作無法復原！")) {
+                    db.ref('quiz_sessions').remove();
+                    alert("資料已清空");
+                }
             };
 
             if (view === 'login') {
                 return (
                     <div className="min-h-screen flex items-center justify-center bg-indigo-600 p-6">
                         <div className="bg-white p-10 rounded-[2.5rem] shadow-2xl w-full max-w-sm text-center">
-                            <h1 className="text-3xl font-black text-indigo-900 mb-2">EngQuiz</h1>
+                            <h1 className="text-3xl font-black text-indigo-900 mb-8 tracking-tighter">EngQuiz</h1>
                             <input type="text" placeholder="輸入姓名開始" 
                                 className="w-full p-4 bg-slate-50 rounded-2xl mb-4 text-center font-bold outline-none"
                                 value={studentName} onChange={e => setStudentName(e.target.value)} />
@@ -134,26 +138,25 @@
                 return (
                     <div className="max-w-md mx-auto mt-12 p-8 bg-white rounded-[2.5rem] shadow-xl border border-slate-100">
                         <div className="flex justify-between items-center mb-6 text-xs font-bold text-slate-300">
-                            <span>LIVE TEST</span>
-                            <span>{currentIdx + 1} / {quizData.length}</span>
+                            <span>Q {currentIdx + 1} / {quizData.length}</span>
                         </div>
                         <h2 className="text-xl font-bold text-slate-800 mb-8">{quizData[currentIdx].question}</h2>
                         <div className="space-y-3">
                             {quizData[currentIdx].options.map((opt, i) => (
                                 <button key={i} onClick={() => status === 'idle' && handleAnswer(opt)}
-                                    className={`w-full p-5 text-left border-2 rounded-2xl font-bold transition-all ${status !== 'idle' ? (opt === quizData[currentIdx].correct ? 'border-green-500 bg-green-50' : (opt === selectedOption ? 'border-red-500 bg-red-50' : 'opacity-30')) : 'hover:border-indigo-500'}`}>
+                                    className={`w-full p-5 text-left border-2 rounded-2xl font-bold transition-all ${status === 'answered' ? (opt === quizData[currentIdx].correct ? 'border-green-500 bg-green-50 text-green-700' : (opt === selectedOption ? 'border-red-500 bg-red-50 text-red-700' : 'opacity-30')) : 'hover:border-indigo-500'}`}>
                                     {opt}
                                 </button>
                             ))}
                         </div>
-                        {status !== 'idle' && (
-                            <div className="mt-8 animate-fadeIn">
+                        {status === 'answered' && (
+                            <div className="mt-8">
                                 <p className="text-sm text-slate-500 mb-4 bg-slate-50 p-4 rounded-2xl italic">解析：{quizData[currentIdx].explanation}</p>
                                 <button onClick={() => {
-                                    if(currentIdx < quizData.length - 1) { setCurrentIdx(currentIdx+1); setStatus('idle'); }
+                                    if(currentIdx < quizData.length - 1) { setCurrentIdx(currentIdx+1); setStatus('idle'); setSelectedOption(null); }
                                     else { finishQuiz(); }
                                 }} className="w-full bg-slate-800 text-white py-4 rounded-2xl font-bold">
-                                    {currentIdx < quizData.length - 1 ? "下一題" : "上傳結果並結束"}
+                                    {currentIdx < quizData.length - 1 ? "下一題" : "送出結果"}
                                 </button>
                             </div>
                         )}
@@ -166,36 +169,37 @@
                     <div className="max-w-4xl mx-auto p-6">
                         <div className="flex justify-between items-center mb-10">
                             <h1 className="text-3xl font-black text-slate-800 tracking-tighter">RECORDS</h1>
-                            <button onClick={() => setView('login')} className="bg-slate-800 text-white px-6 py-2 rounded-xl font-bold">退出</button>
+                            <div className="flex space-x-3">
+                                <button onClick={clearAllData} className="bg-red-50 text-red-500 px-4 py-2 rounded-xl text-xs font-black border border-red-100 hover:bg-red-500 hover:text-white transition-all">清空所有紀錄</button>
+                                <button onClick={() => setView('login')} className="bg-slate-800 text-white px-6 py-2 rounded-xl font-bold text-xs">退出</button>
+                            </div>
                         </div>
+                        
                         <div className="space-y-4">
-                            {allLogs.map((session) => (
+                            {allLogs.length === 0 ? (
+                                <div className="text-center py-20 text-slate-300 font-bold border-2 border-dashed rounded-[2rem]">目前暫無作答紀錄</div>
+                            ) : allLogs.map((session) => (
                                 <div key={session.id} className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
-                                    <div className="p-6 cursor-pointer flex justify-between items-center hover:bg-slate-50" onClick={() => setExpandedId(expandedId === session.id ? null : session.id)}>
+                                    <div className="p-6 cursor-pointer flex justify-between items-center" onClick={() => setExpandedId(expandedId === session.id ? null : session.id)}>
                                         <div className="flex items-center space-x-4">
                                             <div className="bg-indigo-600 text-white w-10 h-10 rounded-xl flex items-center justify-center font-black">{session.name.charAt(0)}</div>
-                                            <div>
-                                                <h3 className="font-black text-slate-700">{session.name}</h3>
-                                                <p className="text-[10px] text-slate-300 font-bold uppercase">{session.timestamp}</p>
-                                            </div>
+                                            <div><h3 className="font-black text-slate-700">{session.name}</h3><p className="text-[10px] text-slate-300 font-bold uppercase">{session.timestamp}</p></div>
                                         </div>
-                                        <div className="flex space-x-8 text-right">
-                                            <div><p className="text-[9px] text-slate-400 font-black">正確率</p><p className="font-black text-green-500">{session.correctRate}</p></div>
-                                            <div><p className="text-[9px] text-slate-400 font-black">總耗時</p><p className="font-black text-slate-700">{session.totalTime}s</p></div>
+                                        <div className="flex space-x-8 text-right text-xs">
+                                            <div><p className="text-[9px] text-slate-400 font-black uppercase">正確率</p><p className="font-black text-green-500 text-sm">{session.correctRate}</p></div>
+                                            <div><p className="text-[9px] text-slate-400 font-black uppercase">總時長</p><p className="font-black text-slate-700 text-sm">{session.totalTime}s</p></div>
                                             <div className={`transition-transform self-center ${expandedId === session.id ? 'rotate-180' : ''}`}>▼</div>
                                         </div>
                                     </div>
                                     {expandedId === session.id && (
-                                        <div className="px-6 pb-6 bg-slate-50/50 border-t border-slate-50 animate-fadeIn">
+                                        <div className="px-6 pb-6 bg-slate-50/50 animate-fadeIn">
                                             <div className="space-y-2 mt-4">
                                                 {session.details.map((item, idx) => (
-                                                    <div key={idx} className="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-100 text-xs">
-                                                        <span className="font-bold text-slate-500 flex-1">Q{idx+1}. {item.qText.substring(0, 30)}...</span>
+                                                    <div key={idx} className="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-100 text-[11px]">
+                                                        <span className="font-bold text-slate-500 flex-1 truncate mr-4">Q{idx+1}. {item.qText}</span>
                                                         <div className="flex items-center space-x-4">
                                                             <span className="text-slate-300 font-mono">{item.timeTaken}s</span>
-                                                            <span className={item.isCorrect ? "text-green-500 font-black" : "text-red-500 font-black"}>
-                                                                {item.isCorrect ? "✓" : `✗ (${item.choice})`}
-                                                            </span>
+                                                            <span className={item.isCorrect ? "text-green-500 font-black text-sm" : "text-red-500 font-black text-sm"}>{item.isCorrect ? "✓" : `✗ (${item.choice})`}</span>
                                                         </div>
                                                     </div>
                                                 ))}
@@ -212,12 +216,12 @@
             if (view === 'admin_login') {
                 return (
                     <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
-                        <div className="bg-white p-10 rounded-[2.5rem] shadow-xl w-full max-w-sm">
-                            <h2 className="text-center font-black text-slate-800 text-xl mb-6">ADMIN ACCESS</h2>
-                            <input type="password" placeholder="密碼 1208" 
+                        <div className="bg-white p-10 rounded-[2.5rem] shadow-xl w-full max-w-sm text-center">
+                            <h2 className="font-black text-slate-800 text-xl mb-6 tracking-tighter uppercase">Admin</h2>
+                            <input type="password" placeholder="輸入管理密碼" 
                                 className="w-full p-4 bg-slate-50 rounded-2xl mb-4 border-2 border-transparent focus:border-indigo-500 outline-none text-center font-bold"
                                 onKeyDown={e => e.key === 'Enter' && e.target.value === '1208' && setView('admin')} autoFocus />
-                            <button onClick={() => setView('login')} className="w-full mt-4 text-slate-400 font-bold text-sm text-center">返回</button>
+                            <button onClick={() => setView('login')} className="text-slate-400 font-bold text-xs">返回測驗</button>
                         </div>
                     </div>
                 );
