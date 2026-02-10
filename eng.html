@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>英文雲端即時測驗系統</title>
+    <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-database-compat.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        body { font-family: 'Lexend', 'Noto Sans TC', sans-serif; background-color: #F8FAFC; }
+        .animate-shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
+
+        // --- 🔑 請確認以下配置與你的 Firebase 後台一致 ---
+        const firebaseConfig = {
+    apiKey: "AIzaSyAUlvu46XOZe5tKULG17nJLHaTA9-Cbp1c",
+    authDomain: "eng-practice-d3a17.firebaseapp.com",
+    // 重要：這是資料庫的地址，請確保格式如下
+    databaseURL: "https://eng-practice-d3a17-default-rtdb.firebaseio.com", 
+    projectId: "eng-practice-d3a17",
+    storageBucket: "eng-practice-d3a17.firebasestorage.app",
+    messagingSenderId: "1015937569709",
+    appId: "1:1015937569709:web:b82f057d2068e1be4a4724",
+    measurementId: "G-WNCJQDVXYY"
+};
+
+        // 初始化 Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.database();
+
+        // --- 題庫區域 ---
+        const quizData = [
+            { id: 1, question: "She _______ to the library every Sunday morning.", options: ["go", "goes", "going", "gone"], correct: "goes", explanation: "主詞為第三人稱單數 (She)，現在式動詞需加 s/es。" },
+            { id: 2, question: "I am looking forward to _______ you soon.", options: ["see", "saw", "seeing", "seen"], correct: "seeing", explanation: "look forward to 這裡的 to 是介系詞，後方必須接動名詞 V-ing。" },
+            { id: 3, question: "The movie was so _______ that I fell asleep.", options: ["excited", "exciting", "bored", "boring"], correct: "boring", explanation: "形容事物（電影）讓人感到無聊，應使用 V-ing 形式的形容詞。" }
+        ];
+
+        function App() {
+            const [view, setView] = useState('login'); 
+            const [studentName, setStudentName] = useState('');
+            const [currentIdx, setCurrentIdx] = useState(0);
+            const [status, setStatus] = useState('idle'); // idle, correct, wrong
+            const [selectedOption, setSelectedOption] = useState(null);
+            const [allLogs, setAllLogs] = useState([]);
+            const startTimeRef = useRef(null);
+
+            // 監聽雲端資料庫 (老師後台即時更新用)
+            useEffect(() => {
+                const logsRef = db.ref('quiz_logs');
+                logsRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        setAllLogs(Object.values(data));
+                    }
+                });
+                return () => logsRef.off();
+            }, []);
+
+            const handleAnswer = (choice) => {
+                const endTime = Date.now();
+                const timeTaken = ((endTime - startTimeRef.current) / 1000).toFixed(2);
+                const isCorrect = choice === quizData[currentIdx].correct;
+                
+                // 計算這是該學生對該題的第幾次嘗試
+                const attemptNo = allLogs.filter(l => l.name === studentName && l.qId === quizData[currentIdx].id).length + 1;
+
+                const logData = {
+                    name: studentName,
+                    qId: quizData[currentIdx].id,
+                    qText: quizData[currentIdx].question,
+                    choice,
+                    isCorrect,
+                    timeTaken,
+                    attemptNo,
+                    timestamp: new Date().toLocaleString()
+                };
+
+                // 🚀 推送到 Firebase 雲端
+                db.ref('quiz_logs').push(logData);
+
+                setSelectedOption(choice);
+                setStatus(isCorrect ? 'correct' : 'wrong');
+            };
+
+            // 1. 學生登入畫面
+            if (view === 'login') {
+                return (
+                    <div className="min-h-screen flex items-center justify-center bg-indigo-600 p-6">
+                        <div className="bg-white p-10 rounded-[2.5rem] shadow-2xl w-full max-w-sm text-center">
+                            <h1 className="text-3xl font-black text-indigo-900 mb-2">EngQuiz</h1>
+                            <p className="text-slate-400 text-sm mb-8 font-bold">雲端同步測驗系統</p>
+                            <input type="text" placeholder="請輸入姓名或座號" 
+                                className="w-full p-4 bg-slate-50 border-2 border-transparent focus:border-indigo-500 rounded-2xl mb-4 text-center font-bold outline-none transition-all"
+                                value={studentName} onChange={e => setStudentName(e.target.value)} />
+                            <button onClick={() => studentName && setView('quiz')} 
+                                className="w-full bg-indigo-500 hover:bg-indigo-600 text-white py-4 rounded-2xl font-bold text-lg shadow-lg active:scale-95 transition-all">
+                                開始測驗
+                            </button>
+                            <button onClick={() => setView('admin_login')} className="mt-8 text-indigo-200 text-xs font-bold hover:text-white transition-colors">管理員登入</button>
+                        </div>
+                    </div>
+                );
+            }
+
+            // 2. 學生測驗介面
+            if (view === 'quiz') {
+                if (status === 'idle') startTimeRef.current = Date.now();
+                return (
+                    <div className="max-w-md mx-auto mt-12 p-8 bg-white rounded-[2.5rem] shadow-xl border border-slate-100 relative">
+                        <div className="flex justify-between items-center mb-6">
+                            <span className="text-[10px] font-black text-indigo-500 bg-indigo-50 px-3 py-1 rounded-full uppercase tracking-widest">Live Cloud</span>
+                            <span className="text-xs font-bold text-slate-300">Q {currentIdx + 1} / {quizData.length}</span>
+                        </div>
+                        
+                        <h2 className="text-2xl font-bold text-slate-800 mb-8 leading-tight">{quizData[currentIdx].question}</h2>
+                        
+                        <div className="space-y-3">
+                            {quizData[currentIdx].options.map((opt, i) => {
+                                let btnClass = "border-slate-50 hover:border-indigo-500 hover:bg-indigo-50";
+                                if (status !== 'idle') {
+                                    if (opt === quizData[currentIdx].correct) btnClass = "border-green-500 bg-green-50 text-green-700 shadow-sm";
+                                    else if (opt === selectedOption && status === 'wrong') btnClass = "border-red-500 bg-red-50 text-red-700 animate-shake";
+                                    else btnClass = "border-slate-50 opacity-30";
+                                }
+                                return (
+                                    <button key={i} onClick={() => status === 'idle' && handleAnswer(opt)}
+                                        className={`w-full p-5 text-left border-2 rounded-2xl font-bold transition-all flex justify-between items-center ${btnClass}`}>
+                                        <span>{opt}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {status !== 'idle' && (
+                            <div className={`mt-8 p-6 rounded-3xl border-2 transition-all ${status === 'correct' ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'}`}>
+                                <div className="flex items-center mb-3">
+                                    <span className="text-2xl mr-3">{status === 'correct' ? '✅' : '❌'}</span>
+                                    <h3 className={`font-black ${status === 'correct' ? 'text-green-600' : 'text-red-600'}`}>
+                                        {status === 'correct' ? '答對了！' : `答錯了 (正解: ${quizData[currentIdx].correct})`}
+                                    </h3>
+                                </div>
+                                <p className="text-sm text-slate-600 leading-relaxed bg-white/50 p-4 rounded-2xl border border-white">
+                                    <strong>解析：</strong>{quizData[currentIdx].explanation}
+                                </p>
+                                <button onClick={() => {
+                                    if(currentIdx < quizData.length - 1) { setCurrentIdx(currentIdx+1); setStatus('idle'); setSelectedOption(null); }
+                                    else { alert("測驗完成！資料已同步雲端。"); setView('login'); setCurrentIdx(0); setStatus('idle'); }
+                                }} className="w-full mt-5 bg-slate-800 text-white py-4 rounded-2xl font-bold shadow-lg active:scale-95 transition-all">
+                                    {currentIdx < quizData.length - 1 ? "下一題" : "結束測驗"}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                );
+            }
+
+            // 3. 老師管理後台
+            if (view === 'admin') {
+                const sortedLogs = [...allLogs].reverse();
+                return (
+                    <div className="max-w-6xl mx-auto p-6">
+                        <div className="flex justify-between items-end mb-8">
+                            <div>
+                                <h1 className="text-4xl font-black text-slate-800 tracking-tighter">DATA CENTER</h1>
+                                <p className="text-slate-400 font-bold">雲端即時作答流水帳</p>
+                            </div>
+                            <button onClick={() => setView('login')} className="bg-slate-800 text-white px-6 py-2 rounded-xl font-bold shadow-lg">退出後台</button>
+                        </div>
+
+                        <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
+                            <table className="w-full text-left">
+                                <thead className="bg-slate-50 border-b border-slate-100 text-slate-400 text-[10px] font-black uppercase tracking-widest">
+                                    <tr>
+                                        <th className="p-6">學生姓名</th>
+                                        <th className="p-6">題目內容</th>
+                                        <th className="p-6">結果</th>
+                                        <th className="p-6">耗時</th>
+                                        <th className="p-6">嘗試次數</th>
+                                        <th className="p-6">時間</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50">
+                                    {sortedLogs.length === 0 ? (
+                                        <tr><td colSpan="6" className="p-20 text-center text-slate-300 font-bold">目前尚無雲端紀錄</td></tr>
+                                    ) : sortedLogs.map((log, i) => (
+                                        <tr key={i} className="hover:bg-indigo-50/30 transition-colors">
+                                            <td className="p-6 font-black text-slate-700">{log.name}</td>
+                                            <td className="p-6 text-slate-500 text-sm">{log.qText}</td>
+                                            <td className={`p-6 font-black ${log.isCorrect ? 'text-green-500' : 'text-red-500'}`}>{log.isCorrect ? '✓' : '✗'}</td>
+                                            <td className="p-6 text-indigo-500 font-mono font-bold">{log.timeTaken}s</td>
+                                            <td className="p-6 text-slate-400 font-bold">第 {log.attemptNo} 次</td>
+                                            <td className="p-6 text-slate-300 text-xs">{log.timestamp}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                );
+            }
+
+            // 4. 管理員登入
+            if (view === 'admin_login') {
+                return (
+                    <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
+                        <div className="bg-white p-10 rounded-[2.5rem] shadow-xl w-full max-w-sm">
+                            <h2 className="text-center font-black text-slate-800 text-xl mb-6 tracking-tighter">ADMIN ACCESS</h2>
+                            <input type="password" placeholder="請輸入管理密碼" 
+                                className="w-full p-4 bg-slate-50 rounded-2xl mb-4 border-2 border-transparent focus:border-indigo-500 outline-none text-center font-bold tracking-widest"
+                                onKeyDown={e => e.key === 'Enter' && e.target.value === '1234' && setView('admin')} autoFocus />
+                            <p className="text-center text-[10px] text-slate-300 font-bold">預設密碼: 1234</p>
+                            <button onClick={() => setView('login')} className="w-full mt-6 text-slate-400 font-bold text-sm">返回學生登入</button>
+                        </div>
+                    </div>
+                );
+            }
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
