@@ -45,13 +45,19 @@
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // --- 題庫區域 ---
+        // --- 題庫區域 (根據 0208 韋琳.pdf 內容生成) ---
         const quizData = [
-            { id: 1, question: "She _______ to the library every Sunday morning.", options: ["go", "goes", "going", "gone"], correct: "goes", explanation: "主詞為第三人稱單數 (She)，現在式動詞需加 s/es。" },
-            { id: 2, question: "I am looking forward to _______ you soon.", options: ["see", "saw", "seeing", "seen"], correct: "seeing", explanation: "look forward to 這裡的 to 是介系詞，後方必須接動名詞 V-ing。" },
-            { id: 3, question: "The movie was so _______ that I fell asleep.", options: ["excited", "exciting", "bored", "boring"], correct: "boring", explanation: "形容事物（電影）讓人感到無聊，應使用 V-ing 形式的形容詞。" }
+            { id: 1, question: "The Great Wall is an _______ structure built thousands of years ago.", options: ["ancient", "antique", "previous", "precise"], correct: "ancient", explanation: "Ancient 指「古代的」，用來形容數千年前的建築 [cite: 3]。" },
+            { id: 2, question: "Scientists are working hard to develop an _______ to the new virus.", options: ["ancestor", "antibody", "antonym", "antidote"], correct: "antibody", explanation: "Antibody 是「抗體」，是用來對抗病毒的免疫物質 [cite: 3]。" },
+            { id: 3, question: "We should take every _______ to ensure our safety during the trip.", options: ["precaution", "preference", "presence", "prediction"], correct: "precaution", explanation: "Precaution 指「防範措施/預防措施」 。" },
+            { id: 4, question: "It is difficult to _______ the weather accurately a month in advance.", options: ["prevent", "preserve", "predict", "prepare"], correct: "predict", explanation: "Predict 指「預測/預知」未來的事 。" },
+            { id: 5, question: "This shop sells _______ furniture from the 19th century.", options: ["antique", "ancient", "previous", "present"], correct: "antique", explanation: "Antique 指「古董」，通常指有價值的古老物品 [cite: 3]。" },
+            { id: 6, question: "Her _______ for classical music makes her different from her peers.", options: ["presence", "preference", "precaution", "precede"], correct: "preference", explanation: "Preference 指「偏好/優先選擇」 [cite: 6]。" },
+            { id: 7, question: "The doctor prescribed a course of _______ to treat the infection.", options: ["antidote", "antonyms", "antibiotics", "ancestors"], correct: "antibiotics", explanation: "Antibiotic 是「抗生素」，用於治療細菌感染 [cite: 3]。" },
+            { id: 8, question: "Please _______ for the meeting by reading the report beforehand.", options: ["prepare", "preserve", "prevent", "preview"], correct: "prepare", explanation: "Prepare 指「準備」，是預先的動作 。" },
+            { id: 9, question: "The guards try to _______ people from entering the building without a pass.", options: ["precede", "predict", "preserve", "prevent"], correct: "prevent", explanation: "Prevent 指「防止/預防」某事發生 。" },
+            { id: 10, question: "In the sentence 'Happy is the _______ of Sad', what word fits?", options: ["antibody", "antonym", "ancestor", "antidote"], correct: "antonym", explanation: "Antonym 指「反義字」 [cite: 3]。" }
         ];
-
         function App() {
             const [view, setView] = useState('login'); 
             const [studentName, setStudentName] = useState('');
@@ -294,3 +300,4 @@
     </script>
 </body>
 </html>
+
