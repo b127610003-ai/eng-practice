@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>英文雲端即時測驗系統 - 學習儀表板版</title>
+    <title>英文雲端即時測驗系統 - 隱私儀表板版</title>
     <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-database-compat.js"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -88,18 +88,11 @@
                 const correctCount = sessionAnswers.filter(a => a.isCorrect).length;
                 const score = correctCount * 10;
                 const totalTime = sessionAnswers.reduce((sum, a) => sum + parseFloat(a.timeTaken), 0).toFixed(1);
-                const finalData = { 
-                    name: studentName, 
-                    timestamp: new Date().toLocaleString(), 
-                    correctRate: `${correctCount} / 10`, 
-                    score, 
-                    totalTime, 
-                    details: sessionAnswers 
-                };
+                const finalData = { name: studentName, timestamp: new Date().toLocaleString(), correctRate: `${correctCount} / 10`, score, totalTime, details: sessionAnswers };
 
                 const newSessionRef = db.ref('quiz_sessions').push();
                 newSessionRef.set(finalData).then(() => {
-                    setExpandedId(newSessionRef.key); // 自動展開最新的這一筆
+                    setExpandedId(newSessionRef.key);
                     setView('dashboard');
                     setSessionAnswers([]);
                     setCurrentIdx(0);
@@ -113,6 +106,7 @@
                 return { text: "要用功了", icon: "😢", color: "text-red-500", bg: "bg-red-50" };
             };
 
+            // --- 紀錄卡片組件 ---
             const RecordCard = ({ session }) => {
                 const isOpen = expandedId === session.id;
                 const feedback = getFeedback(session.score);
@@ -121,17 +115,11 @@
                         <div className={`p-6 cursor-pointer flex justify-between items-center ${isOpen ? 'bg-indigo-50/30' : 'hover:bg-slate-50'}`} 
                              onClick={() => setExpandedId(isOpen ? null : session.id)}>
                             <div className="flex items-center space-x-4">
-                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl ${feedback.bg}`}>
-                                    {feedback.icon}
-                                </div>
-                                <div>
-                                    <h3 className="font-black text-slate-700">{session.name}</h3>
-                                    <p className="text-[10px] text-slate-300 font-bold uppercase">{session.timestamp}</p>
-                                </div>
+                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl ${feedback.bg}`}>{feedback.icon}</div>
+                                <div><h3 className="font-black text-slate-700">{session.name}</h3><p className="text-[10px] text-slate-300 font-bold uppercase">{session.timestamp}</p></div>
                             </div>
                             <div className="flex space-x-6 text-right">
                                 <div><p className="text-[9px] text-slate-400 font-black uppercase">Score</p><p className={`font-black text-xl ${feedback.color}`}>{session.score}</p></div>
-                                <div className="hidden sm:block"><p className="text-[9px] text-slate-400 font-black uppercase">Status</p><p className="font-bold text-slate-500 text-xs">{feedback.text}</p></div>
                                 <div className={`transition-transform self-center text-slate-300 ${isOpen ? 'rotate-180 text-indigo-400' : ''}`}>▼</div>
                             </div>
                         </div>
@@ -140,15 +128,10 @@
                                 <div className="grid grid-cols-1 gap-2 mt-4">
                                     {session.details.map((item, idx) => (
                                         <div key={idx} className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100 text-[11px]">
-                                            <div className="flex-1 truncate mr-4">
-                                                <span className="font-black text-indigo-400 mr-2">Q{idx+1}</span>
-                                                <span className="font-bold text-slate-600">{item.qText}</span>
-                                            </div>
+                                            <div className="flex-1 truncate mr-4"><span className="font-black text-indigo-400 mr-2">Q{idx+1}</span><span className="font-bold text-slate-600">{item.qText}</span></div>
                                             <div className="flex items-center space-x-3">
                                                 <span className="text-slate-300 font-mono text-[9px]">{item.timeTaken}s</span>
-                                                <span className={item.isCorrect ? "text-green-500 font-black text-sm" : "text-red-500 font-black text-sm"}>
-                                                    {item.isCorrect ? "✓" : `✗ (${item.choice})`}
-                                                </span>
+                                                <span className={item.isCorrect ? "text-green-500 font-black text-sm" : "text-red-500 font-black text-sm"}>{item.isCorrect ? "✓" : `✗ (${item.choice})`}</span>
                                             </div>
                                         </div>
                                     ))}
@@ -159,24 +142,41 @@
                 );
             };
 
+            // --- 各個畫面渲染 ---
             if (view === 'login') {
                 return (
                     <div className="min-h-screen flex items-center justify-center bg-indigo-600 p-6">
                         <div className="bg-white p-10 rounded-[3rem] shadow-2xl w-full max-w-sm text-center">
                             <h1 className="text-4xl font-black text-indigo-900 mb-2 tracking-tighter italic">EngQuiz</h1>
-                            <p className="text-slate-300 text-[10px] font-bold mb-8 tracking-widest uppercase">Learning System v2.0</p>
-                            <input type="text" placeholder="輸入你的大名" 
-                                className="w-full p-5 bg-slate-50 rounded-2xl mb-4 text-center font-black outline-none border-4 border-transparent focus:border-indigo-100 transition-all text-indigo-900"
+                            <p className="text-slate-300 text-[10px] font-bold mb-8 tracking-widest uppercase">Vocabulary Challenge</p>
+                            <input type="text" placeholder="輸入你的姓名" 
+                                className="w-full p-5 bg-slate-50 rounded-2xl mb-6 text-center font-black outline-none border-4 border-transparent focus:border-indigo-100 transition-all text-indigo-900"
                                 value={studentName} onChange={e => setStudentName(e.target.value)} />
-                            <button onClick={() => studentName && setView('quiz')} 
-                                className="w-full bg-indigo-500 hover:bg-indigo-600 text-white py-5 rounded-2xl font-black shadow-lg shadow-indigo-200 transition-all active:scale-95 mb-3">
-                                開始測驗
-                            </button>
-                            <button onClick={() => setView('dashboard')} 
-                                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-500 py-4 rounded-2xl font-black transition-all">
-                                學習儀表板
-                            </button>
-                            <button onClick={() => setView('admin_login')} className="mt-8 text-indigo-200 text-[10px] font-black hover:text-white transition-colors uppercase tracking-widest">Teacher Access</button>
+                            <div className="flex space-x-3">
+                                <button onClick={() => studentName && setView('quiz')} 
+                                    className="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white py-5 rounded-2xl font-black shadow-lg shadow-indigo-100 transition-all active:scale-95">
+                                    開始測驗
+                                </button>
+                                <button onClick={() => setView('dashboard_login')} 
+                                    className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-500 py-5 rounded-2xl font-black transition-all">
+                                    歷史紀錄
+                                </button>
+                            </div>
+                            <button onClick={() => setView('admin_login')} className="mt-8 text-indigo-200 text-[10px] font-black hover:text-white uppercase tracking-widest">Teacher Login</button>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (view === 'dashboard_login') {
+                return (
+                    <div className="min-h-screen flex items-center justify-center p-6">
+                        <div className="bg-white p-10 rounded-[3rem] shadow-xl w-full max-w-sm text-center">
+                            <h2 className="font-black text-slate-800 text-xl mb-6 tracking-tighter uppercase italic">驗證身份</h2>
+                            <p className="text-slate-400 text-xs mb-6 font-bold">請輸入查詢密碼以進入儀表板</p>
+                            <input type="password" placeholder="Passcode" className="w-full p-5 bg-slate-50 rounded-2xl mb-4 border-2 border-transparent focus:border-indigo-500 outline-none text-center font-black tracking-[1em]"
+                                onKeyDown={e => e.key === 'Enter' && e.target.value === '1208' && setView('dashboard')} autoFocus />
+                            <button onClick={() => setView('login')} className="text-slate-300 font-black text-[10px] hover:text-indigo-500 uppercase tracking-widest">返回首頁</button>
                         </div>
                     </div>
                 );
@@ -186,10 +186,7 @@
                 if (status === 'idle') startTimeRef.current = Date.now();
                 return (
                     <div className="max-w-md mx-auto mt-12 p-8 bg-white rounded-[3rem] shadow-xl border border-slate-100">
-                        <div className="flex justify-between items-center mb-10">
-                            <span className="px-4 py-1 bg-indigo-50 text-indigo-500 rounded-full text-[10px] font-black uppercase tracking-tighter">Vocabulary Test</span>
-                            <span className="text-xs font-black text-slate-300">PROGRESS: {currentIdx + 1}/10</span>
-                        </div>
+                        <div className="flex justify-between items-center mb-10"><span className="px-4 py-1 bg-indigo-50 text-indigo-500 rounded-full text-[10px] font-black uppercase">Level 1</span><span className="text-xs font-black text-slate-300">{currentIdx + 1}/10</span></div>
                         <h2 className="text-2xl font-black text-slate-800 mb-10 leading-tight">{quizData[currentIdx].question}</h2>
                         <div className="space-y-3">
                             {quizData[currentIdx].options.map((opt, i) => (
@@ -201,12 +198,9 @@
                         </div>
                         {status === 'answered' && (
                             <div className="mt-10 animate-fadeIn">
-                                <div className="bg-slate-50 p-5 rounded-[2rem] border border-slate-100 mb-6">
-                                    <p className="text-[10px] font-black text-slate-400 uppercase mb-2">Explanation</p>
-                                    <p className="text-sm text-slate-600 font-bold leading-relaxed">{quizData[currentIdx].explanation}</p>
-                                </div>
+                                <div className="bg-slate-50 p-5 rounded-[2rem] border border-slate-100 mb-6"><p className="text-sm text-slate-600 font-bold leading-relaxed">{quizData[currentIdx].explanation}</p></div>
                                 <button onClick={() => { if(currentIdx < 9) { setCurrentIdx(currentIdx+1); setStatus('idle'); setSelectedOption(null); } else { finishQuiz(); } }}
-                                    className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black shadow-xl active:scale-95 transition-all">
+                                    className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black shadow-xl">
                                     {currentIdx < 9 ? "NEXT QUESTION" : "SUBMIT & VIEW SCORE"}
                                 </button>
                             </div>
@@ -216,34 +210,18 @@
             }
 
             if (view === 'dashboard' || view === 'admin') {
-                const filteredLogs = view === 'dashboard' && studentName 
-                    ? allLogs.filter(log => log.name === studentName) 
-                    : allLogs;
-
+                const filteredLogs = view === 'dashboard' && studentName ? allLogs.filter(log => log.name === studentName) : allLogs;
                 return (
-                    <div className="max-w-4xl mx-auto p-6 animate-fadeIn">
+                    <div className="max-w-4xl mx-auto p-6">
                         <div className="flex justify-between items-end mb-12">
-                            <div>
-                                <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase">{view === 'dashboard' ? 'Learning Board' : 'Data Center'}</h1>
-                                <p className="text-slate-400 font-bold text-xs mt-1">{view === 'dashboard' ? `Hello, ${studentName || 'Guest'}! Check your progress below.` : 'Managing student performance logs.'}</p>
-                            </div>
+                            <div><h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase">{view === 'dashboard' ? 'Learning Board' : 'Data Center'}</h1><p className="text-slate-400 font-bold text-xs mt-1">{studentName || 'Guest'}'s Records</p></div>
                             <div className="flex space-x-2">
-                                {view === 'admin' && <button onClick={() => { if(window.confirm("⚠️ 確定清空所有數據？")) db.ref('quiz_sessions').remove(); }} className="bg-red-50 text-red-500 px-4 py-2 rounded-xl text-[10px] font-black border border-red-100 hover:bg-red-500 hover:text-white transition-all">CLEAR ALL</button>}
-                                <button onClick={() => { setView('login'); setExpandedId(null); }} className="bg-slate-900 text-white px-6 py-2 rounded-xl font-black text-[10px] shadow-lg uppercase">Back Home</button>
+                                {view === 'admin' && <button onClick={() => { if(window.confirm("⚠️ 確定清空？")) db.ref('quiz_sessions').remove(); }} className="bg-red-50 text-red-500 px-4 py-2 rounded-xl text-[10px] font-black">CLEAR ALL</button>}
+                                <button onClick={() => { setView('login'); setExpandedId(null); }} className="bg-slate-900 text-white px-6 py-2 rounded-xl font-black text-[10px] uppercase">Back Home</button>
                             </div>
                         </div>
-                        
-                        {!studentName && view === 'dashboard' && (
-                            <div className="bg-white p-12 rounded-[3rem] text-center border-2 border-dashed border-slate-200 mb-10">
-                                <div className="text-4xl mb-4">🔍</div>
-                                <h3 className="font-black text-slate-400">請先在首頁輸入姓名，才能查看個人進度喔！</h3>
-                            </div>
-                        )}
-
                         <div className="space-y-2">
-                            {filteredLogs.length === 0 && studentName ? (
-                                <div className="text-center py-20 text-slate-300 font-black border-2 border-dashed rounded-[3rem] bg-white">目前還沒有作答紀錄</div>
-                            ) : filteredLogs.map(session => <RecordCard key={session.id} session={session} />)}
+                            {filteredLogs.length === 0 ? <div className="text-center py-20 text-slate-300 font-black border-2 border-dashed rounded-[3rem] bg-white">目前還沒有作答紀錄</div> : filteredLogs.map(session => <RecordCard key={session.id} session={session} />)}
                         </div>
                     </div>
                 );
@@ -253,10 +231,10 @@
                 return (
                     <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
                         <div className="bg-white p-10 rounded-[3rem] shadow-xl w-full max-w-sm text-center">
-                            <h2 className="font-black text-slate-800 text-xl mb-8 tracking-tighter uppercase italic">Admin Access</h2>
+                            <h2 className="font-black text-slate-800 text-xl mb-8 tracking-tighter uppercase italic">Teacher Access</h2>
                             <input type="password" placeholder="Passcode" className="w-full p-5 bg-slate-50 rounded-2xl mb-4 border-2 border-transparent focus:border-indigo-500 outline-none text-center font-black tracking-[1em]"
                                 onKeyDown={e => e.key === 'Enter' && e.target.value === '1208' && setView('admin')} autoFocus />
-                            <button onClick={() => setView('login')} className="text-slate-300 font-black text-[10px] hover:text-indigo-500 transition-colors uppercase tracking-widest">Return to student portal</button>
+                            <button onClick={() => setView('login')} className="text-slate-300 font-black text-[10px] hover:text-indigo-500 uppercase">Return</button>
                         </div>
                     </div>
                 );
