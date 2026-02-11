@@ -59,8 +59,16 @@
                 { id: 10, question: "Your _______ is requested at the meeting this afternoon.", options: ["presence", "preference", "precaution", "prediction"], correct: "presence", type: "vocabulary" }
             ],
             "雨彤": [
-                { id: 1, question: "中翻英：預防勝於治療。", correct: "Prevention is better than cure.", type: "translation" },
-                { id: 2, question: "中翻英：他出席了昨晚的派對。", correct: "He attended the party last night.", type: "translation" }
+                { id: 1, question: "根據這份圓餅圖，超過一半的受訪者表示他們每天花超過三小時在社交媒體上。", correct: "According to this pie chart, more than half of the respondents stated that they spend more than three hours on social media every day.", type: "translation" },
+                { id: 2, question: "從 2020 年到 2024 年，使用外送平台的人數呈現顯著的增長。", correct: "From 2020 to 2024, the number of people using food delivery platforms witnessed/showed a significant growth.", type: "translation" },
+                { id: 3, question: "這份長條圖比較了不同年齡層在休閒活動上的偏好。", correct: "This bar chart compares the preferences of different age groups regarding leisure activities.", type: "translation" },
+                { id: 4, question: "數據顯示，雖然閱讀人數在下降，但聽電子書的比例卻在上升。", correct: "The data shows that while the number of readers is on the decline, the proportion of people listening to audiobooks is on the rise.", type: "translation" },
+                { id: 5, question: "相較於男生，女生在選擇大學專業時更傾向於考慮未來就業前景。", correct: "Compared with boys, girls tend to consider future career prospects more when choosing a college major.", type: "translation" },
+                { id: 6, question: "在所有的運動項目中，籃球最受歡迎，佔了總數的百分之四十。", correct: "Among all sports, basketball is the most popular, accounting for/making up forty percent of the total.", type: "translation" },
+                { id: 7, question: "這兩項因素之間的差距在過去兩年內逐漸縮小。", correct: "The gap between these two factors has gradually narrowed over the past two years.", type: "translation" },
+                { id: 8, question: "值得注意的是，偏好線上購物的人數幾乎是偏好實體店面的人數的兩倍。", correct: "It is worth noting that the number of people who prefer online shopping is nearly twice as many as those who prefer physical stores.", type: "translation" },
+                { id: 9, question: "總之，這項調查反映出當代青少年對睡眠不足問題的擔憂。", correct: "In conclusion, the survey reflects modern teenagers' concerns about sleep deprivation.", type: "translation" },
+                { id: 10, question: "我們可以從圖表中推論出，便利性是影響消費者行為的最主要因素。", correct: "We can infer from the chart that convenience is the dominant factor influencing consumer behavior.", type: "translation" }
             ]
         };
 
@@ -97,6 +105,7 @@
             }, [allLogs, student]);
 
             const handleTranslationGrade = async () => {
+                if (!userInput.trim()) return alert("請先輸入答案");
                 setStatus('loading');
                 const q = QUESTION_BANK[student][currentIdx];
                 try {
@@ -158,7 +167,6 @@
                 setView('record'); setSessionAnswers([]); setCurrentIdx(0); setStatus('idle'); setUserInput(''); setAiFeedback(null);
             };
 
-            // 視圖渲染邏輯 (簡化顯示)
             if (view === 'home') return (
                 <div className="min-h-screen flex items-center justify-center p-6">
                     <div className="glass-card p-10 w-full max-w-sm shadow-2xl text-center animate-pop">
@@ -232,7 +240,7 @@
                                         disabled={status !== 'idle'}
                                     />
                                     {status === 'idle' && (
-                                        <button onClick={handleTranslationGrade} className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black">AI 批改</button>
+                                        <button onClick={handleTranslationGrade} className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black">下一題</button>
                                     )}
                                     {status === 'loading' && (
                                         <div className="text-center py-4 text-indigo-500 font-bold animate-pulse">批改中...</div>
@@ -250,13 +258,11 @@
 
                         {status === 'answered' && (
                             <div className="mt-8 space-y-4 animate-pop">
-                                {isTranslation && (
-                                    <div className={`p-4 rounded-2xl border-2 ${sessionAnswers[currentIdx].isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                                        <p className="text-xs font-black uppercase text-slate-400 mb-1">AI Teacher says:</p>
-                                        <p className="font-bold text-slate-700">{aiFeedback}</p>
-                                        <p className="text-[10px] mt-2 text-slate-400 italic">正確答案: {q.correct}</p>
-                                    </div>
-                                )}
+                                <div className={`p-4 rounded-2xl border-2 ${sessionAnswers[currentIdx].isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                                    <p className="text-xs font-black uppercase text-slate-400 mb-1">AI Teacher says:</p>
+                                    <p className="font-bold text-slate-700">{aiFeedback || (sessionAnswers[currentIdx].isCorrect ? "答對了！" : "再接再厲！")}</p>
+                                    <p className="text-[10px] mt-2 text-slate-400 italic">正確答案: {q.correct}</p>
+                                </div>
                                 <button onClick={() => {
                                     if (currentIdx < questions.length - 1) {
                                         setCurrentIdx(currentIdx+1); setStatus('idle'); setUserInput(''); setAiFeedback(null); startTimeRef.current = Date.now();
