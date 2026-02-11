@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EngQuiz 2.0</title>
+    <title>EngQuiz 2.0 - Professional Grading</title>
     <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-database-compat.js"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -16,15 +16,13 @@
         .glass-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border-radius: 2.5rem; border: 1px solid rgba(255, 255, 255, 0.5); }
         .animate-pop { animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes pop { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef, useMemo } = React;
+        const { useState, useEffect, useRef } = React;
         const GEMINI_API_KEY = "AIzaSyAvvOJKmBlZb9xFVaWUaydNYdrzs3bTNJo";
 
         const firebaseConfig = {
@@ -40,10 +38,9 @@
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // 嚴格定義單元
         const CONFIG = {
             "韋琳": { units: ["2/8 單字測驗"], pass: "1224" },
-            "雨彤": { units: ["2/13 翻譯題練習"], pass: "8888" }
+            "雨彤": { units: ["2/13 圖表作文翻譯"], pass: "8888" }
         };
 
         const QUESTION_BANK = {
@@ -60,39 +57,17 @@
                 { id: 10, question: "Your _______ is requested at the meeting this afternoon.", options: ["presence", "preference", "precaution", "prediction"], correct: "presence", type: "vocabulary" }
             ],
             "雨彤": [
-                { id: 1, question: "中翻英：預防勝於治療。", correct: "Prevention is better than cure.", type: "translation" },
-                { id: 2, question: "中翻英：我們需要採取一些預防措施來避免感冒。", correct: "We need to take some precautions to avoid catching a cold.", type: "translation" }
+                { id: 1, question: "根據這份圓餅圖，超過一半的受訪者表示他們每天花超過三小時在社交媒體上。", type: "translation" },
+                { id: 2, question: "從 2020 年到 2024 年，使用外送平台的人數呈現顯著的增長。", type: "translation" },
+                { id: 3, question: "這份長條圖比較了不同年齡層在休閒活動上的偏好。", type: "translation" },
+                { id: 4, question: "數據顯示，雖然閱讀人數在下降，但聽電子書的比例卻在上升。", type: "translation" },
+                { id: 5, question: "相較於男生，女生在選擇大學專業時更傾向於考慮未來就業前景。", type: "translation" },
+                { id: 6, question: "在所有的運動項目中，籃球最受歡迎，佔了總數的百分之四十。", type: "translation" },
+                { id: 7, question: "這兩項因素之間的差距在過去兩年內逐漸縮小。", type: "translation" },
+                { id: 8, question: "值得注意的是，偏好線上購物的人數幾乎是偏好實體店面的人數的兩倍。", type: "translation" },
+                { id: 9, question: "總之，這項調查反映出當代青少年對睡眠不足問題的擔憂。", type: "translation" },
+                { id: 10, question: "我們可以從圖表中推論出，便利性是影響消費者行為的最主要因素。", type: "translation" }
             ]
-        };
-
-        // 獨立批改組件：用於 Dashboard 和 Admin
-        const AiReview = ({ question, answer, correct }) => {
-            const [feedback, setFeedback] = useState("點擊按鈕進行 AI 批改");
-            const [loading, setLoading] = useState(false);
-            const analyze = async () => {
-                setLoading(true);
-                try {
-                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            contents: [{ parts: [{ text: `你是一位英文老師。請簡短點評學生的中翻英。題目：${question}，正確參考：${correct}，學生回答：${answer}。請給出一句改進建議。` }] }]
-                        })
-                    });
-                    const data = await response.json();
-                    setFeedback(data.candidates[0].content.parts[0].text);
-                } catch (e) { setFeedback("批改暫時無法使用，請稍後再試。"); }
-                setLoading(false);
-            };
-            return (
-                <div className="mt-2 p-3 bg-white/50 rounded-xl border border-indigo-100">
-                    <p className="text-[11px] font-bold text-slate-600 mb-2">{feedback}</p>
-                    {!loading && feedback.includes("點擊") && (
-                        <button onClick={analyze} className="text-[10px] bg-indigo-600 text-white px-3 py-1 rounded-lg font-black shadow-sm hover:bg-indigo-700">自動批改</button>
-                    )}
-                    {loading && <div className="text-[10px] animate-pulse text-indigo-400 font-bold">AI 老師正在閱卷中...</div>}
-                </div>
-            );
         };
 
         function App() {
@@ -105,6 +80,7 @@
             const [expandedLog, setExpandedLog] = useState(null);
             const [adminFilter, setAdminFilter] = useState({ name: '', unit: '' });
             const [userInput, setUserInput] = useState('');
+            const [gradingStatus, setGradingStatus] = useState({});
             const startTimeRef = useRef(null);
 
             useEffect(() => {
@@ -113,48 +89,80 @@
                 return () => ref.off();
             }, []);
 
+            // --- 強化版 AI 批改邏輯 ---
+            const handleAiGrade = async (logId, detailIdx) => {
+                const log = allLogs.find(l => l.id === logId);
+                const detail = log.details[detailIdx];
+                const key = `${logId}-${detailIdx}`;
+                setGradingStatus(prev => ({ ...prev, [key]: true }));
+
+                try {
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: `你是一位資深英文老師。請批改這題圖表作文翻譯。
+                            中文題目：${detail.qText}
+                            學生回答：${detail.choice || "無內容"}
+                            
+                            請嚴格按照以下 JSON 格式回傳，不要有任何 Markdown 語法或額外說明文字：
+                            {"score": 分數1到10, "feedback": "指出錯誤點並提供一句正確且道地的參考翻譯。"} ` }] }]
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    let rawText = data.candidates[0].content.parts[0].text;
+                    
+                    // JSON 提取正則，防止 AI 回傳包含 ```json ... ```
+                    const jsonMatch = rawText.match(/\{.*\}/s);
+                    if (!jsonMatch) throw new Error("Format error");
+                    
+                    const result = JSON.parse(jsonMatch[0]);
+
+                    await db.ref(`quiz_sessions/${logId}/details/${detailIdx}`).update({
+                        aiScore: result.score,
+                        aiFeedback: result.feedback,
+                        gradedAt: new Date().toLocaleString()
+                    });
+                } catch (e) {
+                    console.error(e);
+                    alert("批改失敗：請確認 API 金鑰權限或學生是否留白。");
+                }
+                setGradingStatus(prev => ({ ...prev, [key]: false }));
+            };
+
             const handleNext = (choice = null) => {
                 const q = QUESTION_BANK[student][currentIdx];
                 const time = ((Date.now() - startTimeRef.current) / 1000).toFixed(2);
-                
                 const currentAnswer = {
                     qText: q.question,
                     choice: q.type === 'translation' ? userInput : choice,
                     isCorrect: q.type === 'translation' ? true : (choice === q.correct),
                     timeTaken: time,
-                    type: q.type,
-                    correctRef: q.correct
+                    type: q.type
                 };
-
                 const newAnswers = [...sessionAnswers, currentAnswer];
                 setSessionAnswers(newAnswers);
-                
                 if (currentIdx < QUESTION_BANK[student].length - 1) {
-                    setCurrentIdx(currentIdx + 1);
-                    setUserInput('');
-                    startTimeRef.current = Date.now();
+                    setCurrentIdx(currentIdx + 1); setUserInput(''); startTimeRef.current = Date.now();
                 } else {
-                    const score = Math.round((newAnswers.filter(a => a.isCorrect).length / QUESTION_BANK[student].length) * 100);
-                    db.ref('quiz_sessions').push({ name: student, unit: unit, timestamp: new Date().toLocaleString(), score, details: newAnswers });
-                    setView('record');
-                    setSessionAnswers([]);
-                    setCurrentIdx(0);
-                    setUserInput('');
+                    db.ref('quiz_sessions').push({ name: student, unit: unit, timestamp: new Date().toLocaleString(), score: 100, details: newAnswers });
+                    setView('record'); setSessionAnswers([]); setCurrentIdx(0); setUserInput('');
                 }
             };
 
-            // --- Home View ---
+            // --- UI 畫面渲染 ---
             if (view === 'home') return (
                 <div className="min-h-screen flex items-center justify-center p-6">
                     <div className="glass-card p-10 w-full max-w-sm shadow-2xl text-center animate-pop">
-                        <h1 className="text-4xl font-black text-indigo-900 mb-8 italic italic">EngQuiz</h1>
-                        <div className="space-y-4 mb-10 text-left">
-                            <select className="w-full p-4 bg-white rounded-2xl font-bold border-2 border-transparent focus:border-indigo-300 outline-none"
+                        <h1 className="text-4xl font-black text-indigo-900 mb-8 italic">EngQuiz</h1>
+                        <div className="space-y-4 mb-10">
+                            <select className="w-full p-4 bg-white rounded-2xl font-bold border-2 border-transparent focus:border-indigo-300 outline-none shadow-sm"
                                 value={student} onChange={e => { setStudent(e.target.value); setUnit(CONFIG[e.target.value]?.units[0] || ''); }}>
                                 <option value="">選擇學生</option>
                                 {Object.keys(CONFIG).map(s => <option key={s} value={s}>{s}</option>)}
                             </select>
-                            <select className="w-full p-4 bg-white rounded-2xl font-bold border-2 border-transparent focus:border-indigo-300 outline-none"
+                            <select className="w-full p-4 bg-white rounded-2xl font-bold border-2 border-transparent focus:border-indigo-300 outline-none shadow-sm"
                                 value={unit} onChange={e => setUnit(e.target.value)} disabled={!student}>
                                 {!student ? <option value="">請先選學生</option> : CONFIG[student].units.map(u => <option key={u} value={u}>{u}</option>)}
                             </select>
@@ -163,90 +171,76 @@
                             <button onClick={() => student && setView('quiz')} className="bg-indigo-600 text-white py-5 rounded-2xl font-black shadow-lg">START</button>
                             <button onClick={() => student && setView('auth')} className="bg-white text-indigo-600 py-5 rounded-2xl font-black border-2 border-indigo-100">RECORD</button>
                         </div>
-                        <button onClick={() => setView('admin_auth')} className="mt-8 text-indigo-400 text-xs font-bold uppercase">Teacher Login</button>
+                        <button onClick={() => setView('admin_auth')} className="mt-8 text-indigo-400 text-xs font-bold uppercase">Teacher Admin</button>
                     </div>
                 </div>
             );
 
-            // --- Auth Views ---
             if (view === 'auth' || view === 'admin_auth') {
                 const isAdmin = view === 'admin_auth';
                 return (
                     <div className="min-h-screen flex items-center justify-center p-6">
                         <div className="glass-card p-10 w-full max-w-sm text-center animate-pop">
-                            <h2 className="text-xl font-black mb-6">{isAdmin ? '老師後台驗證' : `驗證：${student}`}</h2>
+                            <h2 className="text-xl font-black mb-6">{isAdmin ? '老師後台驗證' : `驗證學生：${student}`}</h2>
                             <input type="password" placeholder="Passcode" className="w-full p-4 rounded-2xl text-center font-black mb-6 border-2 border-indigo-200 outline-none"
                                 onKeyDown={async (e) => { if(e.key === 'Enter') {
                                     if (isAdmin && e.target.value === '1208') setView('admin');
                                     else if (!isAdmin && e.target.value === CONFIG[student].pass) setView('record');
                                     else alert('密碼錯誤');
                                 }}} autoFocus />
-                            <button onClick={() => setView('home')} className="text-slate-400 font-bold text-sm">返回</button>
+                            <button onClick={() => setView('home')} className="text-slate-400 font-bold text-sm underline">返回</button>
                         </div>
                     </div>
                 );
             }
 
-            // --- Quiz View (只輸入不批改) ---
             if (view === 'quiz') {
                 if (!startTimeRef.current) startTimeRef.current = Date.now();
                 const q = QUESTION_BANK[student][currentIdx];
                 return (
                     <div className="max-w-md mx-auto mt-12 p-8 bg-white rounded-[3rem] shadow-2xl animate-pop">
-                        <div className="flex justify-between items-center mb-10">
-                            <span className="bg-indigo-50 text-indigo-600 px-4 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest">{unit}</span>
+                        <div className="flex justify-between items-center mb-8">
+                            <span className="bg-indigo-50 text-indigo-600 px-4 py-1 rounded-xl text-[10px] font-black">{unit}</span>
                             <span className="text-slate-300 font-black text-xs">{currentIdx + 1} / {QUESTION_BANK[student].length}</span>
                         </div>
-                        <h2 className="text-2xl font-black text-slate-800 mb-10">{q.question}</h2>
-                        {q.type === 'translation' ? (
-                            <div className="space-y-4">
-                                <textarea className="w-full p-5 bg-slate-50 rounded-2xl font-bold border-2 border-indigo-100 focus:border-indigo-400 outline-none h-44 text-lg"
-                                    placeholder="在此輸入翻譯答案..." value={userInput} onChange={e => setUserInput(e.target.value)} />
-                                <button onClick={() => handleNext()} className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest">Next Question</button>
-                            </div>
-                        ) : (
-                            <div className="space-y-3">
-                                {q.options.map((opt, i) => (
-                                    <button key={i} onClick={() => handleNext(opt)} className="w-full p-5 text-left rounded-2xl font-bold border-4 border-slate-50 hover:border-indigo-100 transition-all">{opt}</button>
-                                ))}
-                            </div>
-                        )}
+                        <h2 className="text-2xl font-black text-slate-800 mb-8 leading-relaxed">{q.question}</h2>
+                        <textarea className="w-full p-5 bg-slate-50 rounded-2xl font-bold border-2 border-indigo-100 focus:border-indigo-400 outline-none h-44 text-lg mb-4"
+                            placeholder="在此輸入翻譯..." value={userInput} onChange={e => setUserInput(e.target.value)} />
+                        <button onClick={() => handleNext()} className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest">Next</button>
                     </div>
                 );
             }
 
-            // --- Student Dashboard ---
             if (view === 'record') {
                 const myLogs = allLogs.filter(l => l.name === student);
                 return (
-                    <div className="max-w-2xl mx-auto p-6 animate-pop min-h-screen">
+                    <div className="max-w-2xl mx-auto p-6 animate-pop">
                         <div className="glass-card p-8 mb-8 border-t-8 border-emerald-400">
-                            <h2 className="text-3xl font-black text-indigo-900 mb-4 italic">{student}'s Dashboard</h2>
-                            <p className="text-slate-400 text-xs font-bold mb-8 uppercase tracking-widest">歷史作答紀錄與 AI 批改</p>
+                            <h2 className="text-3xl font-black text-indigo-900 mb-2 italic">{student}'s Dashboard</h2>
+                            <p className="text-slate-400 text-[10px] font-black uppercase">老師批改完後即可看到分數與範例</p>
                         </div>
                         <div className="space-y-4">
                             {myLogs.map(l => (
-                                <div key={l.id} className="glass-card p-6 cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setExpandedLog(expandedLog === l.id ? null : l.id)}>
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase">{l.timestamp}</p>
-                                            <h4 className="font-black text-slate-800">{l.unit}</h4>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-xl font-black text-indigo-600">{l.score}%</p>
-                                        </div>
+                                <div key={l.id} className="glass-card p-6" onClick={() => setExpandedLog(expandedLog === l.id ? null : l.id)}>
+                                    <div className="flex justify-between items-center cursor-pointer">
+                                        <div><p className="text-[10px] font-black text-slate-400">{l.timestamp}</p><h4 className="font-black text-slate-800">{l.unit}</h4></div>
+                                        <div className="text-indigo-600 font-black text-xs">查看詳情</div>
                                     </div>
                                     {expandedLog === l.id && (
-                                        <div className="mt-4 pt-4 border-t border-slate-100 space-y-4">
+                                        <div className="mt-4 pt-4 border-t border-slate-100 space-y-6">
                                             {l.details?.map((d, i) => (
-                                                <div key={i} className="text-[13px] font-bold pb-4 border-b border-slate-50 last:border-0">
-                                                    <div className="flex justify-between mb-2">
-                                                        <span className="text-slate-600">Q{i+1}: {d.qText}</span>
-                                                    </div>
-                                                    <div className="p-3 bg-slate-100 rounded-xl mb-2">
-                                                        <span className="text-indigo-600">你的回答：{d.choice || "(未填寫)"}</span>
-                                                    </div>
-                                                    {d.type === 'translation' && <AiReview question={d.qText} answer={d.choice} correct={d.correctRef} />}
+                                                <div key={i} className="pb-4 border-b border-slate-50 last:border-0">
+                                                    <p className="text-slate-500 font-bold text-[11px]">題目 {i+1}: {d.qText}</p>
+                                                    <p className="text-slate-800 font-black text-sm mb-3">你的作答：{d.choice}</p>
+                                                    {d.aiScore ? (
+                                                        <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
+                                                            <div className="flex justify-between items-center mb-1">
+                                                                <span className="text-[10px] font-black text-emerald-600">老師建議 & 給分</span>
+                                                                <span className="text-lg font-black text-emerald-600">{d.aiScore} / 10</span>
+                                                            </div>
+                                                            <p className="text-xs font-bold text-slate-600 leading-relaxed">{d.aiFeedback}</p>
+                                                        </div>
+                                                    ) : <p className="text-[10px] font-bold text-slate-300 italic">等待老師批閱中...</p>}
                                                 </div>
                                             ))}
                                         </div>
@@ -254,16 +248,13 @@
                                 </div>
                             ))}
                         </div>
-                        <button onClick={() => setView('home')} className="mt-8 w-full py-4 text-slate-500 font-black uppercase tracking-widest text-sm hover:text-indigo-600">返回首頁</button>
+                        <button onClick={() => setView('home')} className="mt-8 w-full py-4 text-slate-500 font-black text-sm uppercase">返回</button>
                     </div>
                 );
             }
 
-            // --- Teacher Admin (修復單元篩選與同步批改) ---
             if (view === 'admin') {
                 const filteredLogs = allLogs.filter(l => (!adminFilter.name || l.name === adminFilter.name) && (!adminFilter.unit || l.unit === adminFilter.unit));
-                const unitOptions = adminFilter.name ? CONFIG[adminFilter.name].units : ["2/8 單字測驗", "2/13 翻譯題練習"];
-
                 return (
                     <div className="max-w-4xl mx-auto p-6 animate-pop pb-20">
                         <div className="glass-card p-8 mb-8 border-t-8 border-indigo-600">
@@ -278,7 +269,7 @@
                                 </select>
                                 <select className="p-4 bg-white rounded-2xl font-bold border-2 border-slate-100 outline-none" value={adminFilter.unit} onChange={e => setAdminFilter({...adminFilter, unit: e.target.value})}>
                                     <option value="">所有單元</option>
-                                    {unitOptions.map(u => <option key={u} value={u}>{u}</option>)}
+                                    {adminFilter.name && CONFIG[adminFilter.name].units.map(u => <option key={u} value={u}>{u}</option>)}
                                 </select>
                             </div>
                         </div>
@@ -286,24 +277,28 @@
                             {filteredLogs.map(l => (
                                 <div key={l.id} className="glass-card p-6">
                                     <div className="flex justify-between items-center cursor-pointer" onClick={() => setExpandedLog(expandedLog === l.id ? null : l.id)}>
-                                        <div>
-                                            <p className="font-black text-slate-800 text-lg">{l.name} - {l.unit}</p>
-                                            <p className="text-[10px] text-slate-400 font-bold uppercase">{l.timestamp}</p>
-                                        </div>
-                                        <div className="flex items-center gap-4">
-                                            <span className="text-2xl font-black text-indigo-600">{l.score}%</span>
-                                            <button onClick={(e) => { e.stopPropagation(); if(window.confirm('確定刪除此紀錄？')) db.ref(`quiz_sessions/${l.id}`).remove(); }} className="bg-red-50 text-red-500 px-3 py-1 rounded-lg text-[10px] font-black">刪除</button>
-                                        </div>
+                                        <div><h3 className="font-black text-slate-800">{l.name} - {l.unit}</h3><p className="text-[10px] text-slate-400 font-bold uppercase">{l.timestamp}</p></div>
+                                        <button onClick={(e) => { e.stopPropagation(); if(confirm('確定刪除？')) db.ref(`quiz_sessions/${l.id}`).remove(); }} className="text-red-400 text-xs font-black">刪除</button>
                                     </div>
                                     {expandedLog === l.id && (
                                         <div className="mt-4 pt-4 border-t border-slate-100 space-y-6">
                                             {l.details?.map((d, i) => (
-                                                <div key={i} className="pb-4 border-b border-slate-50 last:border-0">
-                                                    <div className="flex justify-between text-xs font-bold mb-2">
-                                                        <span className="text-slate-500">Q{i+1}: {d.qText}</span>
-                                                        <span className="text-indigo-500">學生回答: {d.choice}</span>
-                                                    </div>
-                                                    {d.type === 'translation' && <AiReview question={d.qText} answer={d.choice} correct={d.correctRef} />}
+                                                <div key={i} className="p-5 bg-slate-50 rounded-2xl">
+                                                    <p className="text-[10px] font-black text-slate-400 mb-2">Q{i+1}: {d.qText}</p>
+                                                    <p className="text-sm font-black text-indigo-900 mb-4 italic">學生答案: {d.choice || "(未作答)"}</p>
+                                                    {d.aiScore ? (
+                                                        <div className="bg-white p-4 rounded-xl border border-emerald-100 shadow-sm">
+                                                            <div className="flex justify-between items-center mb-1">
+                                                                <span className="text-emerald-600 font-black text-xs">評分: {d.aiScore}/10</span>
+                                                                <button onClick={() => handleAiGrade(l.id, i)} className="text-[9px] text-indigo-400 underline">重新批改</button>
+                                                            </div>
+                                                            <p className="text-xs text-slate-600 font-bold">{d.aiFeedback}</p>
+                                                        </div>
+                                                    ) : (
+                                                        <button onClick={() => handleAiGrade(l.id, i)} disabled={gradingStatus[`${l.id}-${i}`]} className="w-full bg-indigo-600 text-white py-3 rounded-xl text-xs font-black shadow-lg disabled:bg-slate-300">
+                                                            {gradingStatus[`${l.id}-${i}`] ? "正在呼叫 AI..." : "開始 AI 批改並同步"}
+                                                        </button>
+                                                    )}
                                                 </div>
                                             ))}
                                         </div>
@@ -315,8 +310,7 @@
                 );
             }
         }
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
     </script>
 </body>
 </html>
