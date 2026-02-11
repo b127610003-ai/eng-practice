@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>英文雲端即時測驗系統 - 完整管理版</title>
+    <title>英文雲端即時測驗系統 - 學習儀表板版</title>
     <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-database-compat.js"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -12,7 +12,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
-        body { font-family: 'Lexend', 'Noto Sans TC', sans-serif; background-color: #F8FAFC; }
+        body { font-family: 'Lexend', 'Noto Sans TC', sans-serif; background-color: #F1F5F9; }
         .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -78,56 +78,75 @@
                 const endTime = Date.now();
                 const timeTaken = ((endTime - startTimeRef.current) / 1000).toFixed(2);
                 const isCorrect = choice === quizData[currentIdx].correct;
-                
-                const newAnswer = {
-                    qText: quizData[currentIdx].question,
-                    choice,
-                    isCorrect,
-                    timeTaken
-                };
-                
-                setSessionAnswers([...sessionAnswers, newAnswer]);
+                setSessionAnswers([...sessionAnswers, { qText: quizData[currentIdx].question, choice, isCorrect, timeTaken }]);
                 setSelectedOption(choice);
                 setStatus('answered');
             };
 
             const finishQuiz = () => {
-                const totalCorrect = sessionAnswers.filter(a => a.isCorrect).length;
+                const correctCount = sessionAnswers.filter(a => a.isCorrect).length;
+                const score = correctCount * 10;
                 const totalTime = sessionAnswers.reduce((sum, a) => sum + parseFloat(a.timeTaken), 0).toFixed(1);
-                
-                const finalData = {
-                    name: studentName,
-                    timestamp: new Date().toLocaleString(),
-                    correctRate: `${totalCorrect} / ${quizData.length}`,
-                    totalTime: totalTime,
-                    details: sessionAnswers
-                };
-
+                const finalData = { name: studentName, timestamp: new Date().toLocaleString(), correctRate: `${correctCount} / 10`, score, totalTime, details: sessionAnswers };
                 db.ref('quiz_sessions').push(finalData);
                 setSessionAnswers([]);
-                setView('login');
+                setView('dashboard'); // 完成後跳轉儀表板
                 setCurrentIdx(0);
                 setStatus('idle');
             };
 
-            const clearAllData = () => {
-                if (window.confirm("⚠️ 確定要刪除所有學生的作答紀錄嗎？此動作無法復原！")) {
-                    db.ref('quiz_sessions').remove();
-                    alert("資料已清空");
-                }
+            const getFeedback = (score) => {
+                if (score >= 80) return { text: "很優秀", icon: "🏆", color: "text-yellow-500" };
+                if (score >= 60) return { text: "再接再厲", icon: "🎉", color: "text-blue-500" };
+                return { text: "要用功了", icon: "😢", color: "text-red-500" };
+            };
+
+            // --- 學生/老師共通的紀錄卡片組件 ---
+            const RecordCard = ({ session }) => {
+                const isOpen = expandedId === session.id;
+                const feedback = getFeedback(session.score);
+                return (
+                    <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden mb-4">
+                        <div className="p-6 cursor-pointer flex justify-between items-center" onClick={() => setExpandedId(isOpen ? null : session.id)}>
+                            <div className="flex items-center space-x-4">
+                                <div className="text-2xl">{feedback.icon}</div>
+                                <div>
+                                    <h3 className="font-black text-slate-700">{session.name}</h3>
+                                    <p className="text-[10px] text-slate-300 font-bold uppercase">{session.timestamp}</p>
+                                </div>
+                            </div>
+                            <div className="flex space-x-6 text-right">
+                                <div><p className="text-[9px] text-slate-400 font-black">分數</p><p className={`font-black text-lg ${feedback.color}`}>{session.score}</p></div>
+                                <div><p className="text-[9px] text-slate-400 font-black">狀態</p><p className="font-bold text-slate-500 text-xs">{feedback.text}</p></div>
+                                <div className={`transition-transform self-center ${isOpen ? 'rotate-180' : ''}`}>▼</div>
+                            </div>
+                        </div>
+                        {isOpen && (
+                            <div className="px-6 pb-6 bg-slate-50/50 animate-fadeIn">
+                                <div className="space-y-2 mt-4">
+                                    {session.details.map((item, idx) => (
+                                        <div key={idx} className="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-100 text-[11px]">
+                                            <span className="font-bold text-slate-500 flex-1 truncate mr-4">Q{idx+1}. {item.qText}</span>
+                                            <span className={item.isCorrect ? "text-green-500 font-black" : "text-red-500 font-black"}>{item.isCorrect ? "✓" : `✗ (${item.choice})`}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
             };
 
             if (view === 'login') {
                 return (
                     <div className="min-h-screen flex items-center justify-center bg-indigo-600 p-6">
                         <div className="bg-white p-10 rounded-[2.5rem] shadow-2xl w-full max-w-sm text-center">
-                            <h1 className="text-3xl font-black text-indigo-900 mb-8 tracking-tighter">EngQuiz</h1>
-                            <input type="text" placeholder="輸入姓名開始" 
-                                className="w-full p-4 bg-slate-50 rounded-2xl mb-4 text-center font-bold outline-none"
+                            <h1 className="text-3xl font-black text-indigo-900 mb-8 tracking-tighter italic">EngQuiz</h1>
+                            <input type="text" placeholder="你的姓名" className="w-full p-4 bg-slate-50 rounded-2xl mb-4 text-center font-bold outline-none border-2 border-transparent focus:border-indigo-500"
                                 value={studentName} onChange={e => setStudentName(e.target.value)} />
-                            <button onClick={() => studentName && setView('quiz')} 
-                                className="w-full bg-indigo-500 text-white py-4 rounded-2xl font-bold shadow-lg">進入測驗</button>
-                            <button onClick={() => setView('admin_login')} className="mt-8 text-indigo-200 text-xs font-bold">管理員登入</button>
+                            <button onClick={() => studentName && setView('quiz')} className="w-full bg-indigo-500 text-white py-4 rounded-2xl font-bold shadow-lg mb-3">開始挑戰</button>
+                            <button onClick={() => setView('dashboard')} className="w-full bg-slate-100 text-slate-600 py-4 rounded-2xl font-bold">學習儀表板</button>
+                            <button onClick={() => setView('admin_login')} className="mt-8 text-indigo-200 text-xs font-bold block mx-auto">管理員登入</button>
                         </div>
                     </div>
                 );
@@ -137,26 +156,22 @@
                 if (status === 'idle') startTimeRef.current = Date.now();
                 return (
                     <div className="max-w-md mx-auto mt-12 p-8 bg-white rounded-[2.5rem] shadow-xl border border-slate-100">
-                        <div className="flex justify-between items-center mb-6 text-xs font-bold text-slate-300">
-                            <span>Q {currentIdx + 1} / {quizData.length}</span>
-                        </div>
-                        <h2 className="text-xl font-bold text-slate-800 mb-8">{quizData[currentIdx].question}</h2>
+                        <div className="flex justify-between items-center mb-6 text-xs font-bold text-slate-300"><span>LEVEL 1</span><span>{currentIdx + 1} / 10</span></div>
+                        <h2 className="text-xl font-bold text-slate-800 mb-8 leading-tight">{quizData[currentIdx].question}</h2>
                         <div className="space-y-3">
                             {quizData[currentIdx].options.map((opt, i) => (
                                 <button key={i} onClick={() => status === 'idle' && handleAnswer(opt)}
-                                    className={`w-full p-5 text-left border-2 rounded-2xl font-bold transition-all ${status === 'answered' ? (opt === quizData[currentIdx].correct ? 'border-green-500 bg-green-50 text-green-700' : (opt === selectedOption ? 'border-red-500 bg-red-50 text-red-700' : 'opacity-30')) : 'hover:border-indigo-500'}`}>
+                                    className={`w-full p-5 text-left border-2 rounded-2xl font-bold transition-all ${status === 'answered' ? (opt === quizData[currentIdx].correct ? 'border-green-500 bg-green-50 text-green-700' : (opt === selectedOption ? 'border-red-500 bg-red-50 text-red-700' : 'opacity-30')) : 'hover:border-indigo-500 hover:bg-indigo-50'}`}>
                                     {opt}
                                 </button>
                             ))}
                         </div>
                         {status === 'answered' && (
-                            <div className="mt-8">
-                                <p className="text-sm text-slate-500 mb-4 bg-slate-50 p-4 rounded-2xl italic">解析：{quizData[currentIdx].explanation}</p>
-                                <button onClick={() => {
-                                    if(currentIdx < quizData.length - 1) { setCurrentIdx(currentIdx+1); setStatus('idle'); setSelectedOption(null); }
-                                    else { finishQuiz(); }
-                                }} className="w-full bg-slate-800 text-white py-4 rounded-2xl font-bold">
-                                    {currentIdx < quizData.length - 1 ? "下一題" : "送出結果"}
+                            <div className="mt-8 animate-fadeIn">
+                                <p className="text-sm text-slate-500 mb-4 bg-slate-50 p-4 rounded-2xl italic border border-slate-100">解析：{quizData[currentIdx].explanation}</p>
+                                <button onClick={() => { if(currentIdx < 9) { setCurrentIdx(currentIdx+1); setStatus('idle'); setSelectedOption(null); } else { finishQuiz(); } }}
+                                    className="w-full bg-slate-800 text-white py-4 rounded-2xl font-bold">
+                                    {currentIdx < 9 ? "下一題" : "查看儀表板結果"}
                                 </button>
                             </div>
                         )}
@@ -164,50 +179,25 @@
                 );
             }
 
-            if (view === 'admin') {
+            if (view === 'dashboard' || view === 'admin') {
+                const filteredLogs = view === 'dashboard' && studentName 
+                    ? allLogs.filter(log => log.name === studentName) 
+                    : allLogs;
+
                 return (
                     <div className="max-w-4xl mx-auto p-6">
-                        <div className="flex justify-between items-center mb-10">
-                            <h1 className="text-3xl font-black text-slate-800 tracking-tighter">RECORDS</h1>
+                        <div className="flex justify-between items-center mb-8">
+                            <h1 className="text-3xl font-black text-slate-800 tracking-tighter">{view === 'dashboard' ? 'MY DASHBOARD' : 'ADMIN RECORDS'}</h1>
                             <div className="flex space-x-3">
-                                <button onClick={clearAllData} className="bg-red-50 text-red-500 px-4 py-2 rounded-xl text-xs font-black border border-red-100 hover:bg-red-500 hover:text-white transition-all">清空所有紀錄</button>
-                                <button onClick={() => setView('login')} className="bg-slate-800 text-white px-6 py-2 rounded-xl font-bold text-xs">退出</button>
+                                {view === 'admin' && <button onClick={() => { if(window.confirm("確定清空？")) db.ref('quiz_sessions').remove(); }} className="bg-red-50 text-red-500 px-4 py-2 rounded-xl text-xs font-black">清空</button>}
+                                <button onClick={() => setView('login')} className="bg-slate-800 text-white px-6 py-2 rounded-xl font-bold text-xs shadow-lg">返回首頁</button>
                             </div>
                         </div>
-                        
-                        <div className="space-y-4">
-                            {allLogs.length === 0 ? (
-                                <div className="text-center py-20 text-slate-300 font-bold border-2 border-dashed rounded-[2rem]">目前暫無作答紀錄</div>
-                            ) : allLogs.map((session) => (
-                                <div key={session.id} className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
-                                    <div className="p-6 cursor-pointer flex justify-between items-center" onClick={() => setExpandedId(expandedId === session.id ? null : session.id)}>
-                                        <div className="flex items-center space-x-4">
-                                            <div className="bg-indigo-600 text-white w-10 h-10 rounded-xl flex items-center justify-center font-black">{session.name.charAt(0)}</div>
-                                            <div><h3 className="font-black text-slate-700">{session.name}</h3><p className="text-[10px] text-slate-300 font-bold uppercase">{session.timestamp}</p></div>
-                                        </div>
-                                        <div className="flex space-x-8 text-right text-xs">
-                                            <div><p className="text-[9px] text-slate-400 font-black uppercase">正確率</p><p className="font-black text-green-500 text-sm">{session.correctRate}</p></div>
-                                            <div><p className="text-[9px] text-slate-400 font-black uppercase">總時長</p><p className="font-black text-slate-700 text-sm">{session.totalTime}s</p></div>
-                                            <div className={`transition-transform self-center ${expandedId === session.id ? 'rotate-180' : ''}`}>▼</div>
-                                        </div>
-                                    </div>
-                                    {expandedId === session.id && (
-                                        <div className="px-6 pb-6 bg-slate-50/50 animate-fadeIn">
-                                            <div className="space-y-2 mt-4">
-                                                {session.details.map((item, idx) => (
-                                                    <div key={idx} className="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-100 text-[11px]">
-                                                        <span className="font-bold text-slate-500 flex-1 truncate mr-4">Q{idx+1}. {item.qText}</span>
-                                                        <div className="flex items-center space-x-4">
-                                                            <span className="text-slate-300 font-mono">{item.timeTaken}s</span>
-                                                            <span className={item.isCorrect ? "text-green-500 font-black text-sm" : "text-red-500 font-black text-sm"}>{item.isCorrect ? "✓" : `✗ (${item.choice})`}</span>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
+                        {view === 'dashboard' && !studentName && <div className="bg-indigo-50 p-4 rounded-2xl text-indigo-600 font-bold text-center mb-6">請在首頁輸入姓名，即可查看個人學習進度</div>}
+                        <div className="space-y-0">
+                            {filteredLogs.length === 0 ? (
+                                <div className="text-center py-20 text-slate-300 font-bold bg-white rounded-[2rem] border-2 border-dashed">尚無資料</div>
+                            ) : filteredLogs.map(session => <RecordCard key={session.id} session={session} />)}
                         </div>
                     </div>
                 );
@@ -215,13 +205,12 @@
 
             if (view === 'admin_login') {
                 return (
-                    <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
+                    <div className="min-h-screen flex items-center justify-center p-6">
                         <div className="bg-white p-10 rounded-[2.5rem] shadow-xl w-full max-w-sm text-center">
-                            <h2 className="font-black text-slate-800 text-xl mb-6 tracking-tighter uppercase">Admin</h2>
-                            <input type="password" placeholder="輸入管理密碼" 
-                                className="w-full p-4 bg-slate-50 rounded-2xl mb-4 border-2 border-transparent focus:border-indigo-500 outline-none text-center font-bold"
+                            <h2 className="font-black text-slate-800 text-xl mb-6 uppercase">Admin Access</h2>
+                            <input type="password" placeholder="密碼 1208" className="w-full p-4 bg-slate-50 rounded-2xl mb-4 border-2 border-transparent focus:border-indigo-500 outline-none text-center font-bold"
                                 onKeyDown={e => e.key === 'Enter' && e.target.value === '1208' && setView('admin')} autoFocus />
-                            <button onClick={() => setView('login')} className="text-slate-400 font-bold text-xs">返回測驗</button>
+                            <button onClick={() => setView('login')} className="text-slate-400 font-bold text-xs">返回</button>
                         </div>
                     </div>
                 );
