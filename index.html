@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>英文雲端測驗</title>
+    <title>英文雲端測驗 - 學習分析版</title>
     <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-database-compat.js"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -15,14 +15,14 @@
         body { font-family: 'Lexend', 'Noto Sans TC', sans-serif; background-color: #F8FAFC; }
         .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-        select { appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 1rem center; background-size: 1em; }
+        .progress-ring__circle { transition: stroke-dashoffset 0.35s; transform: rotate(-90deg); transform-origin: 50% 50%; }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+        const { useState, useEffect, useRef, useMemo } = React;
 
         const firebaseConfig = {
             apiKey: "AIzaSyAUlvu46XOZe5tKULG17nJLHaTA9-Cbp1c",
@@ -43,21 +43,22 @@
             "雨彤": { units: ["2/11 進階測驗"], pass: "8888" }
         };
 
+        // 題目與解析... (維持原樣)
         const weiLinData = [
-            { id: 1, question: "The pyramids are an _______ structure from ancient Egypt.", options: ["ancient", "previous", "precise", "present"], correct: "ancient", explanation: "Ancient 指「古代的」。" },
-            { id: 2, question: "My _______ came from mainland China many years ago.", options: ["antonyms", "ancestors", "antibiotics", "antidotes"], correct: "ancestors", explanation: "Ancestor 是「祖先」。" },
-            { id: 3, question: "This _______ vase is worth a lot of money.", options: ["antique", "anticipate", "antibody", "ancient"], correct: "antique", explanation: "Antique 是「古董」。" },
-            { id: 4, question: "The doctor gave him an _______ to counteract the poison.", options: ["antidote", "antonym", "antibiotic", "antibody"], correct: "antidote", explanation: "Antidote 是「解毒劑」。" },
-            { id: 5, question: "I _______ that we will have a great time at the party.", options: ["anticipate", "precede", "preserve", "predict"], correct: "anticipate", explanation: "Anticipate 是「預期、期待」。" },
-            { id: 6, question: "The body produces _______ to fight off viruses.", options: ["antibodies", "antibiotics", "antonyms", "ancestors"], correct: "antibodies", explanation: "Antibody 是「抗體」。" },
-            { id: 7, question: "We must take every _______ to stay safe.", options: ["precaution", "preference", "presence", "previous"], correct: "precaution", explanation: "Precaution 是「防範措施」。" },
-            { id: 8, question: "It's hard to _______ who will win the game.", options: ["predict", "prevent", "prepare", "preserve"], correct: "predict", explanation: "Predict 是「預知、預測」。" },
-            { id: 9, question: "He has a strong _______ for coffee over tea.", options: ["preference", "presence", "precaution", "previous"], correct: "preference", explanation: "Preference 是「偏好」。" },
-            { id: 10, question: "Your _______ is required at the meeting.", options: ["presence", "present", "precede", "preserve"], correct: "presence", explanation: "Presence 是「出席、存在」。" }
+            { id: 1, question: "The pyramids are an _______ structure from ancient Egypt.", options: ["ancient", "previous", "precise", "present"], correct: "ancient", explanation: "Ancient 指「古代的」。", type: "vocabulary" },
+            { id: 2, question: "My _______ came from mainland China many years ago.", options: ["antonyms", "ancestors", "antibiotics", "antidotes"], correct: "ancestors", explanation: "Ancestor 是「祖先」。", type: "vocabulary" },
+            { id: 3, question: "This _______ vase is worth a lot of money.", options: ["antique", "anticipate", "antibody", "ancient"], correct: "antique", explanation: "Antique 是「古董」。", type: "vocabulary" },
+            { id: 4, question: "The doctor gave him an _______ to counteract the poison.", options: ["antidote", "antonym", "antibiotic", "antibody"], correct: "antidote", explanation: "Antidote 是「解毒劑」。", type: "vocabulary" },
+            { id: 5, question: "I _______ that we will have a great time at the party.", options: ["anticipate", "precede", "preserve", "predict"], correct: "anticipate", explanation: "Anticipate 是「預期、期待」。", type: "vocabulary" },
+            { id: 6, question: "The body produces _______ to fight off viruses.", options: ["antibodies", "antibiotics", "antonyms", "ancestors"], correct: "antibodies", explanation: "Antibody 是「抗體」。", type: "vocabulary" },
+            { id: 7, question: "We must take every _______ to stay safe.", options: ["precaution", "preference", "presence", "previous"], correct: "precaution", explanation: "Precaution 是「防範措施」。", type: "vocabulary" },
+            { id: 8, question: "It's hard to _______ who will win the game.", options: ["predict", "prevent", "prepare", "preserve"], correct: "predict", explanation: "Predict 是「預知、預測」。", type: "vocabulary" },
+            { id: 9, question: "He has a strong _______ for coffee over tea.", options: ["preference", "presence", "precaution", "previous"], correct: "preference", explanation: "Preference 是「偏好」。", type: "vocabulary" },
+            { id: 10, question: "Your _______ is required at the meeting.", options: ["presence", "present", "precede", "preserve"], correct: "presence", explanation: "Presence 是「出席、存在」。", type: "vocabulary" }
         ];
 
         const yuTongData = [
-            { id: 1, question: "The manager needs to _______ the upcoming project's potential risks.", options: ["anticipate", "ancient", "antidote", "ancestor"], correct: "anticipate", explanation: "Anticipate 指「預期、預料」。" }
+            { id: 1, question: "The manager needs to _______ the upcoming project's potential risks.", options: ["anticipate", "ancient", "antidote", "ancestor"], correct: "anticipate", explanation: "Anticipate 指「預期、預料」。", type: "vocabulary" }
         ];
 
         function App() {
@@ -65,25 +66,24 @@
             const [studentName, setStudentName] = useState('');
             const [availableUnits, setAvailableUnits] = useState([]);
             const [selectedUnit, setSelectedUnit] = useState('');
-            const [currentIdx, setCurrentIdx] = useState(0);
-            const [status, setStatus] = useState('idle');
-            const [selectedOption, setSelectedOption] = useState(null);
             const [allLogs, setAllLogs] = useState([]);
             const [expandedId, setExpandedId] = useState(null);
+            const [showWrongList, setShowWrongList] = useState(false);
+            const [wrongTypeFilter, setWrongTypeFilter] = useState('vocabulary');
+            const [status, setStatus] = useState('idle');
+            const [currentIdx, setCurrentIdx] = useState(0);
+            const [selectedOption, setSelectedOption] = useState(null);
             const [sessionAnswers, setSessionAnswers] = useState([]);
-            const startTimeRef = useRef(null);
-
-            // 老師後台專用篩選狀態
             const [adminStudentFilter, setAdminStudentFilter] = useState('All');
             const [adminUnitFilter, setAdminUnitFilter] = useState('All');
+            const startTimeRef = useRef(null);
 
             const quizData = studentName === "韋琳" ? weiLinData : (studentName === "雨彤" ? yuTongData : []);
 
             useEffect(() => {
                 if (studentName && studentConfig[studentName]) {
-                    const units = studentConfig[studentName].units;
-                    setAvailableUnits(units);
-                    setSelectedUnit(units[0]);
+                    setAvailableUnits(studentConfig[studentName].units);
+                    setSelectedUnit(studentConfig[studentName].units[0]);
                 }
             }, [studentName]);
 
@@ -92,40 +92,40 @@
                 logsRef.on('value', (snapshot) => {
                     const data = snapshot.val();
                     if (data) {
-                        const logsArray = Object.entries(data).map(([id, val]) => ({ id, ...val }));
-                        setAllLogs(logsArray.reverse());
-                    } else {
-                        setAllLogs([]);
-                    }
+                        setAllLogs(Object.entries(data).map(([id, val]) => ({ id, ...val })).reverse());
+                    } else setAllLogs([]);
                 });
                 return () => logsRef.off();
             }, []);
 
-            const deleteRecord = (id, e) => {
-                e.stopPropagation();
-                if (window.confirm("⚠️ 確定要刪除這筆作答紀錄嗎？")) {
-                    db.ref(`quiz_sessions/${id}`).remove();
-                }
-            };
+            // 數據計算
+            const studentLogs = useMemo(() => allLogs.filter(log => log.name === studentName), [allLogs, studentName]);
+            const stats = useMemo(() => {
+                if (studentLogs.length === 0) return { avgScore: 0, total: 0, wrongQuestions: [] };
+                const totalScore = studentLogs.reduce((acc, curr) => acc + curr.score, 0);
+                const wrongs = [];
+                studentLogs.forEach(log => {
+                    log.details.forEach(d => {
+                        if (!d.isCorrect) {
+                            wrongs.push({ ...d, timestamp: log.timestamp, unit: log.unit });
+                        }
+                    });
+                });
+                return {
+                    avgScore: Math.round(totalScore / studentLogs.length),
+                    total: studentLogs.length,
+                    wrongQuestions: wrongs
+                };
+            }, [studentLogs]);
 
             const handleLoginAttempt = (inputPass, targetView) => {
                 if (targetView === 'admin') {
                     if (inputPass === '1208') setView('admin');
-                    else alert('老師密碼錯誤！');
+                    else alert('密碼錯誤');
                 } else {
-                    if (!studentName) { alert('請先選擇學生'); return; }
                     if (inputPass === studentConfig[studentName].pass) setView('dashboard');
-                    else alert('學生密碼錯誤！');
+                    else alert('密碼錯誤');
                 }
-            };
-
-            const handleAnswer = (choice) => {
-                const endTime = Date.now();
-                const timeTaken = ((endTime - startTimeRef.current) / 1000).toFixed(2);
-                const isCorrect = choice === quizData[currentIdx].correct;
-                setSessionAnswers(prev => [...prev, { qText: quizData[currentIdx].question, choice, isCorrect, timeTaken }]);
-                setSelectedOption(choice);
-                setStatus('answered');
             };
 
             const finishQuiz = () => {
@@ -134,18 +134,11 @@
                 const totalTime = sessionAnswers.reduce((sum, a) => sum + parseFloat(a.timeTaken), 0).toFixed(1);
                 
                 const finalData = { 
-                    name: studentName, 
-                    unit: selectedUnit,
-                    timestamp: new Date().toLocaleString(), 
-                    correctRate: `${correctCount} / ${quizData.length}`, 
-                    score, 
-                    totalTime, 
-                    details: sessionAnswers 
+                    name: studentName, unit: selectedUnit, timestamp: new Date().toLocaleString(), 
+                    score, totalTime, details: sessionAnswers 
                 };
 
-                const newSessionRef = db.ref('quiz_sessions').push();
-                newSessionRef.set(finalData).then(() => {
-                    setExpandedId(newSessionRef.key);
+                db.ref('quiz_sessions').push(finalData).then(() => {
                     setView('dashboard');
                     setSessionAnswers([]);
                     setCurrentIdx(0);
@@ -153,52 +146,35 @@
                 });
             };
 
-            const getFeedback = (score) => {
-                if (score >= 80) return { icon: "🏆", color: "text-yellow-500", bg: "bg-yellow-50" };
-                if (score >= 60) return { icon: "🎉", color: "text-blue-500", bg: "bg-blue-50" };
-                return { icon: "😢", color: "text-red-500", bg: "bg-red-50" };
-            };
-
             const RecordCard = ({ session, isAdminView }) => {
                 const isOpen = expandedId === session.id;
-                const feedback = getFeedback(session.score);
+                const color = session.score >= 80 ? 'text-green-500' : (session.score >= 60 ? 'text-blue-500' : 'text-red-500');
                 return (
-                    <div className={`rounded-[2rem] shadow-sm border overflow-hidden mb-4 transition-all ${isOpen ? 'border-indigo-200 ring-4 ring-indigo-50' : 'border-slate-100 bg-white'}`}>
-                        <div className={`p-6 cursor-pointer flex justify-between items-center ${isOpen ? 'bg-indigo-50/30' : 'hover:bg-slate-50'}`} 
-                             onClick={() => setExpandedId(isOpen ? null : session.id)}>
-                            <div className="flex items-center space-x-4">
-                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl ${feedback.bg}`}>{feedback.icon}</div>
+                    <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden mb-3">
+                        <div className="p-5 flex justify-between items-center cursor-pointer" onClick={() => setExpandedId(isOpen ? null : session.id)}>
+                            <div className="flex items-center space-x-3">
+                                <div className="text-xl font-black">{session.score >= 60 ? '✅' : '❌'}</div>
                                 <div>
-                                    <h3 className="font-black text-slate-700 leading-none mb-1">{session.name} <span className="text-[9px] bg-indigo-100 text-indigo-500 px-2 py-0.5 rounded-full ml-1 font-bold">{session.unit}</span></h3>
-                                    <p className="text-[10px] text-slate-300 font-bold uppercase tracking-tight">{session.timestamp}</p>
+                                    <h4 className="font-black text-slate-700 text-sm">{session.unit}</h4>
+                                    <p className="text-[10px] text-slate-300 font-bold uppercase">{session.timestamp}</p>
                                 </div>
                             </div>
-                            <div className="flex items-center space-x-6 text-right">
-                                <div><p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Time</p><p className="font-black text-sm text-slate-500">{session.totalTime}s</p></div>
-                                <div><p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Score</p><p className={`font-black text-xl ${feedback.color}`}>{session.score}</p></div>
-                                <div className="flex flex-col items-center space-y-2">
-                                    {isAdminView && (
-                                        <button onClick={(e) => deleteRecord(session.id, e)} className="p-2 hover:bg-red-50 text-red-300 hover:text-red-500 transition-colors rounded-lg">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                        </button>
-                                    )}
-                                    <div className={`transition-transform text-slate-300 ${isOpen ? 'rotate-180 text-indigo-400' : ''}`}>▼</div>
-                                </div>
+                            <div className="flex items-center space-x-4">
+                                <div className="text-right"><p className="text-[8px] text-slate-400 font-black uppercase">Score</p><p className={`font-black text-lg ${color}`}>{session.score}</p></div>
+                                {isAdminView && (
+                                    <button onClick={(e) => {e.stopPropagation(); if(confirm('刪除？')) db.ref(`quiz_sessions/${session.id}`).remove();}} className="text-red-200 hover:text-red-500">🗑️</button>
+                                )}
+                                <div className={`text-slate-300 transition-transform ${isOpen ? 'rotate-180' : ''}`}>▼</div>
                             </div>
                         </div>
                         {isOpen && (
-                            <div className="px-6 pb-6 bg-white animate-fadeIn">
-                                <div className="grid grid-cols-1 gap-2 mt-4">
-                                    {session.details.map((item, idx) => (
-                                        <div key={idx} className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100 text-[11px]">
-                                            <div className="flex-1 truncate mr-4 font-bold text-slate-600"><span className="text-indigo-400 mr-2">Q{idx+1}</span>{item.qText}</div>
-                                            <div className="text-slate-400 font-bold mr-4 italic">{item.timeTaken}s</div>
-                                            <div className="flex items-center space-x-3">
-                                                <span className={item.isCorrect ? "text-green-500 font-black text-sm" : "text-red-500 font-black text-sm"}>{item.isCorrect ? "✓" : `✗ (${item.choice})`}</span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+                            <div className="px-5 pb-5 animate-fadeIn space-y-2">
+                                {session.details.map((d, i) => (
+                                    <div key={i} className="text-[11px] p-3 bg-slate-50 rounded-xl flex justify-between">
+                                        <span className="font-bold text-slate-500 flex-1 truncate">{d.qText}</span>
+                                        <span className={d.isCorrect ? "text-green-500" : "text-red-500"}>{d.isCorrect ? "✓" : `✗ (${d.choice})`}</span>
+                                    </div>
+                                ))}
                             </div>
                         )}
                     </div>
@@ -208,30 +184,24 @@
             if (view === 'login') {
                 return (
                     <div className="min-h-screen flex items-center justify-center bg-indigo-600 p-6">
-                        <div className="bg-white p-10 rounded-[3.5rem] shadow-2xl w-full max-sm text-center">
-                            <h1 className="text-4xl font-black text-indigo-900 mb-2 tracking-tighter italic">EngQuiz</h1>
-                            <p className="text-slate-300 text-[10px] font-bold mb-10 tracking-widest uppercase">Student Portal</p>
-                            <div className="space-y-4 mb-8">
-                                <div className="text-left px-2"><label className="text-[10px] font-black text-indigo-400 uppercase ml-1">選擇學生</label>
-                                    <select className="w-full p-5 bg-slate-50 rounded-2xl font-black outline-none border-4 border-transparent focus:border-indigo-100 transition-all text-indigo-900 mt-1"
-                                        value={studentName} onChange={e => setStudentName(e.target.value)}>
-                                        <option value="">請選擇姓名</option>
-                                        {Object.keys(studentConfig).map(s => <option key={s} value={s}>{s}</option>)}
-                                    </select>
-                                </div>
-                                <div className="text-left px-2"><label className="text-[10px] font-black text-indigo-400 uppercase ml-1">專屬單元</label>
-                                    <select className="w-full p-5 bg-slate-50 rounded-2xl font-black outline-none border-4 border-transparent focus:border-indigo-100 transition-all text-indigo-900 mt-1 disabled:opacity-50"
-                                        value={selectedUnit} onChange={e => setSelectedUnit(e.target.value)} disabled={!studentName}>
-                                        {!studentName && <option value="">請先選擇學生</option>}
-                                        {availableUnits.map(u => <option key={u} value={u}>{u}</option>)}
-                                    </select>
-                                </div>
+                        <div className="bg-white p-10 rounded-[3.5rem] shadow-2xl w-full max-w-sm text-center">
+                            <h1 className="text-4xl font-black text-indigo-900 mb-2 italic">EngQuiz</h1>
+                            <div className="space-y-4 my-8">
+                                <select className="w-full p-5 bg-slate-50 rounded-2xl font-black text-indigo-900"
+                                    value={studentName} onChange={e => setStudentName(e.target.value)}>
+                                    <option value="">選擇學生</option>
+                                    {Object.keys(studentConfig).map(s => <option key={s} value={s}>{s}</option>)}
+                                </select>
+                                <select className="w-full p-5 bg-slate-50 rounded-2xl font-black text-indigo-900"
+                                    value={selectedUnit} onChange={e => setSelectedUnit(e.target.value)} disabled={!studentName}>
+                                    {availableUnits.map(u => <option key={u} value={u}>{u}</option>)}
+                                </select>
                             </div>
                             <div className="flex space-x-3">
-                                <button onClick={() => studentName && setView('quiz')} disabled={!studentName} className="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white py-5 rounded-2xl font-black shadow-xl disabled:opacity-30 transition-all active:scale-95">開始測驗</button>
-                                <button onClick={() => setView('dashboard_login')} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-500 py-5 rounded-2xl font-black transition-all">歷史紀錄</button>
+                                <button onClick={() => studentName && setView('quiz')} className="flex-1 bg-indigo-500 text-white py-5 rounded-2xl font-black shadow-lg">開始測驗</button>
+                                <button onClick={() => setView('dashboard_login')} className="flex-1 bg-slate-100 text-slate-500 py-5 rounded-2xl font-black">歷史紀錄</button>
                             </div>
-                            <button onClick={() => setView('admin_login')} className="mt-10 text-indigo-200 text-[10px] font-black hover:text-white uppercase tracking-widest">Teacher Login</button>
+                            <button onClick={() => setView('admin_login')} className="mt-8 text-indigo-200 text-xs font-black uppercase">Teacher Login</button>
                         </div>
                     </div>
                 );
@@ -242,13 +212,10 @@
                 return (
                     <div className="min-h-screen flex items-center justify-center p-6">
                         <div className="bg-white p-10 rounded-[3rem] shadow-xl w-full max-w-sm text-center">
-                            <h2 className="font-black text-slate-800 text-xl mb-6 tracking-tighter uppercase italic">{isAdmin ? 'Teacher Access' : '身份驗證'}</h2>
-                            <p className="text-slate-400 text-xs mb-6 font-bold tracking-wide">
-                                {isAdmin ? '請輸入老師密碼' : `請輸入 ${studentName || '(未選學生)'} 的密碼`}
-                            </p>
-                            <input type="password" placeholder="Passcode" className="w-full p-5 bg-slate-50 rounded-2xl mb-4 border-2 border-transparent focus:border-indigo-500 outline-none text-center font-black tracking-[1em]"
+                            <h2 className="font-black text-slate-800 mb-6">{isAdmin ? '老師登入' : `${studentName} 的儀表板`}</h2>
+                            <input type="password" placeholder="Passcode" className="w-full p-5 bg-slate-50 rounded-2xl mb-4 text-center font-black tracking-[1em]"
                                 onKeyDown={e => e.key === 'Enter' && handleLoginAttempt(e.target.value, isAdmin ? 'admin' : 'dashboard')} autoFocus />
-                            <button onClick={() => setView('login')} className="text-slate-300 font-black text-[10px] hover:text-indigo-500 uppercase">返回</button>
+                            <button onClick={() => setView('login')} className="text-slate-300 text-xs font-black">返回</button>
                         </div>
                     </div>
                 );
@@ -256,74 +223,116 @@
 
             if (view === 'quiz') {
                 if (status === 'idle') startTimeRef.current = Date.now();
+                const currentQ = quizData[currentIdx];
                 return (
-                    <div className="max-w-md mx-auto mt-12 p-8 bg-white rounded-[3.5rem] shadow-xl border border-slate-100">
-                        <div className="flex justify-between items-center mb-10"><div className="flex flex-col"><span className="px-3 py-1 bg-indigo-50 text-indigo-500 rounded-lg text-[9px] font-black uppercase mb-1">{selectedUnit}</span><span className="text-slate-400 text-[10px] font-bold">Student: {studentName}</span></div><span className="text-xs font-black text-slate-300">{currentIdx + 1}/{quizData.length}</span></div>
-                        <h2 className="text-2xl font-black text-slate-800 mb-10 leading-tight">{quizData[currentIdx].question}</h2>
-                        <div className="space-y-3">{quizData[currentIdx].options.map((opt, i) => (
-                            <button key={i} onClick={() => status === 'idle' && handleAnswer(opt)} className={`w-full p-5 text-left border-2 rounded-2xl font-black transition-all ${status === 'answered' ? (opt === quizData[currentIdx].correct ? 'border-green-500 bg-green-50 text-green-600' : (opt === selectedOption ? 'border-red-500 bg-red-50 text-red-600' : 'opacity-20 border-slate-50')) : 'border-slate-50 hover:border-indigo-500 hover:bg-indigo-50 text-slate-600'}`}>{opt}</button>
+                    <div className="max-w-md mx-auto mt-12 p-8 bg-white rounded-[3.5rem] shadow-xl">
+                        <div className="flex justify-between items-center mb-10"><span className="text-[10px] font-black px-3 py-1 bg-indigo-50 text-indigo-500 rounded-lg">{selectedUnit}</span><span className="text-xs font-black text-slate-300">{currentIdx + 1}/{quizData.length}</span></div>
+                        <h2 className="text-2xl font-black text-slate-800 mb-10 leading-tight">{currentQ.question}</h2>
+                        <div className="space-y-3">{currentQ.options.map((opt, i) => (
+                            <button key={i} onClick={() => status === 'idle' && (() => {
+                                const time = ((Date.now() - startTimeRef.current) / 1000).toFixed(2);
+                                setSessionAnswers([...sessionAnswers, { qText: currentQ.question, choice: opt, isCorrect: opt === currentQ.correct, timeTaken: time, type: currentQ.type || 'vocabulary' }]);
+                                setSelectedOption(opt); setStatus('answered');
+                            })()} className={`w-full p-5 text-left border-2 rounded-2xl font-black transition-all ${status === 'answered' ? (opt === currentQ.correct ? 'border-green-500 bg-green-50 text-green-600' : (opt === selectedOption ? 'border-red-500 bg-red-50 text-red-600' : 'opacity-20 border-slate-50')) : 'border-slate-100 hover:border-indigo-500'}`}>{opt}</button>
                         ))}</div>
-                        {status === 'answered' && <div className="mt-10 animate-fadeIn"><div className="bg-slate-50 p-5 rounded-[2rem] border border-slate-100 mb-6 font-bold text-slate-600 text-sm leading-relaxed">解析：{quizData[currentIdx].explanation}</div><button onClick={() => { if(currentIdx < quizData.length - 1) { setCurrentIdx(currentIdx+1); setStatus('idle'); setSelectedOption(null); } else { finishQuiz(); } }} className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black shadow-xl active:scale-95 transition-all">{currentIdx < quizData.length - 1 ? "下一題" : "送出結果"}</button></div>}
+                        {status === 'answered' && <div className="mt-8 animate-fadeIn"><div className="bg-slate-50 p-5 rounded-2xl text-sm mb-6">解析：{currentQ.explanation}</div><button onClick={() => { if(currentIdx < quizData.length - 1) { setCurrentIdx(currentIdx+1); setStatus('idle'); } else finishQuiz(); }} className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black">下一題</button></div>}
                     </div>
                 );
             }
 
-            if (view === 'dashboard' || view === 'admin') {
-                const isAdmin = view === 'admin';
-                
-                // 篩選邏輯更新
-                const filteredLogs = allLogs.filter(log => {
-                    const studentMatch = isAdmin 
-                        ? (adminStudentFilter === 'All' || log.name === adminStudentFilter)
-                        : (log.name === studentName);
-                    const unitMatch = isAdmin 
-                        ? (adminUnitFilter === 'All' || log.unit === adminUnitFilter)
-                        : true; // 學生視角預設看全部自己的
-                    return studentMatch && unitMatch;
-                });
-
+            if (view === 'dashboard') {
                 return (
-                    <div className="max-w-5xl mx-auto p-6 animate-fadeIn">
-                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
-                            <div>
-                                <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase">{isAdmin ? 'Data Center' : 'Learning Board'}</h1>
-                                <p className="text-slate-400 font-bold text-xs mt-1">{isAdmin ? '全視角管理與篩選' : `${studentName} 的個人紀錄`}</p>
+                    <div className="max-w-4xl mx-auto p-6 animate-fadeIn pb-20">
+                        {/* 學習成效區 */}
+                        <div className="bg-indigo-600 rounded-[3rem] p-8 text-white mb-8 shadow-2xl relative overflow-hidden">
+                            <div className="flex flex-col md:flex-row items-center justify-between gap-8 relative z-10">
+                                <div>
+                                    <h1 className="text-3xl font-black tracking-tighter mb-2 italic">Learning Analytics</h1>
+                                    <p className="opacity-70 font-bold text-sm">Hello, {studentName}! 這是您的學習戰報。</p>
+                                    <div className="flex gap-4 mt-6">
+                                        <div className="bg-white/10 p-4 rounded-3xl backdrop-blur-md">
+                                            <p className="text-[10px] font-black uppercase opacity-60">測驗次數</p>
+                                            <p className="text-2xl font-black">{stats.total}</p>
+                                        </div>
+                                        <div className="bg-white/10 p-4 rounded-3xl backdrop-blur-md">
+                                            <p className="text-[10px] font-black uppercase opacity-60">平均分數</p>
+                                            <p className="text-2xl font-black">{stats.avgScore}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {/* 圓環進度條 */}
+                                <div className="relative flex items-center justify-center">
+                                    <svg className="w-32 h-32">
+                                        <circle className="text-white/20" strokeWidth="8" stroke="currentColor" fill="transparent" r="50" cx="64" cy="64" />
+                                        <circle className="text-white progress-ring__circle" strokeWidth="8" strokeDasharray="314.159" strokeDashoffset={314.159 - (stats.avgScore / 100) * 314.159} strokeLinecap="round" stroke="currentColor" fill="transparent" r="50" cx="64" cy="64" />
+                                    </svg>
+                                    <div className="absolute text-2xl font-black">{stats.avgScore}%</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 錯題區 */}
+                        <div className="mb-8">
+                            <div className="flex justify-between items-end mb-4 px-2">
+                                <h2 className="text-xl font-black text-slate-800">錯題英雄榜 <span className="text-xs bg-red-100 text-red-500 px-2 py-1 rounded-full ml-1">{stats.wrongQuestions.length}</span></h2>
+                                <button onClick={() => setShowWrongList(!showWrongList)} className="text-indigo-500 font-black text-xs uppercase tracking-widest">{showWrongList ? '收合' : '展開分析'}</button>
                             </div>
                             
-                            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                                {isAdmin && (
-                                    <React.Fragment>
-                                        <select className="bg-white border-2 border-indigo-100 text-indigo-600 px-4 py-2 rounded-xl text-xs font-black outline-none focus:ring-4 focus:ring-indigo-50"
-                                            value={adminStudentFilter} onChange={e => {setAdminStudentFilter(e.target.value); setAdminUnitFilter('All');}}>
-                                            <option value="All">所有學生</option>
-                                            {Object.keys(studentConfig).map(s => <option key={s} value={s}>{s}</option>)}
-                                        </select>
-                                        
-                                        <select className="bg-white border-2 border-indigo-100 text-indigo-600 px-4 py-2 rounded-xl text-xs font-black outline-none focus:ring-4 focus:ring-indigo-50"
-                                            value={adminUnitFilter} onChange={e => setAdminUnitFilter(e.target.value)}>
-                                            <option value="All">所有單元</option>
-                                            {adminStudentFilter !== 'All' ? 
-                                                studentConfig[adminStudentFilter].units.map(u => <option key={u} value={u}>{u}</option>) :
-                                                [...new Set(allLogs.map(l => l.unit))].map(u => <option key={u} value={u}>{u}</option>)
-                                            }
-                                        </select>
-                                        
-                                        <button onClick={() => { if(window.confirm("⚠️ 確定清空目前的紀錄嗎？")) db.ref('quiz_sessions').remove(); }} className="bg-red-50 text-red-500 px-4 py-2 rounded-xl text-[10px] font-black border border-red-100">CLEAR ALL</button>
-                                    </React.Fragment>
-                                )}
-                                <button onClick={() => { setView('login'); setExpandedId(null); }} className="bg-slate-900 text-white px-6 py-2 rounded-xl font-black text-[10px] uppercase shadow-lg">Back Home</button>
-                            </div>
-                        </div>
-                        
-                        <div className="space-y-0">
-                            {filteredLogs.length === 0 ? (
-                                <div className="text-center py-20 text-slate-300 font-black border-4 border-dashed rounded-[3rem] bg-white">
-                                    符合條件的紀錄為空
+                            {showWrongList && (
+                                <div className="bg-white border-4 border-indigo-50 rounded-[2.5rem] p-6 mb-6 animate-fadeIn">
+                                    <div className="flex space-x-2 mb-6 bg-slate-50 p-1 rounded-2xl w-fit">
+                                        <button onClick={() => setWrongTypeFilter('vocabulary')} className={`px-6 py-2 rounded-xl text-xs font-black transition-all ${wrongTypeFilter === 'vocabulary' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400'}`}>單字區</button>
+                                        <button onClick={() => setWrongTypeFilter('grammar')} className={`px-6 py-2 rounded-xl text-xs font-black transition-all ${wrongTypeFilter === 'grammar' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400'}`}>文法區</button>
+                                    </div>
+                                    <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+                                        {stats.wrongQuestions.filter(q => q.type === wrongTypeFilter).length > 0 ? (
+                                            stats.wrongQuestions.filter(q => q.type === wrongTypeFilter).map((q, i) => (
+                                                <div key={i} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex justify-between items-center group">
+                                                    <div className="flex-1 mr-4">
+                                                        <p className="text-[11px] font-black text-slate-600 leading-tight">{q.qText}</p>
+                                                        <p className="text-[9px] text-slate-400 mt-1 font-bold italic">{q.unit} · Your answer: <span className="text-red-400">{q.choice}</span></p>
+                                                    </div>
+                                                    <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center text-xs group-hover:scale-110 transition-transform">❌</div>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="text-center py-10 text-slate-300 font-black italic">此區暫無錯題，太棒了！</div>
+                                        )}
+                                    </div>
                                 </div>
-                            ) : (
-                                filteredLogs.map(session => <RecordCard key={session.id} session={session} isAdminView={isAdmin} />)
                             )}
                         </div>
+
+                        {/* 歷史清單 */}
+                        <div className="flex justify-between items-center mb-4 px-2">
+                            <h2 className="text-xl font-black text-slate-800 italic uppercase">Records</h2>
+                            <button onClick={() => setView('login')} className="bg-slate-900 text-white px-5 py-2 rounded-xl font-black text-[10px] uppercase">Logout</button>
+                        </div>
+                        <div className="space-y-0">{studentLogs.map(log => <RecordCard key={log.id} session={log} isAdminView={false} />)}</div>
+                    </div>
+                );
+            }
+
+            // 老師後台介面 (維持篩選功能)
+            if (view === 'admin') {
+                const filteredLogs = allLogs.filter(log => (adminStudentFilter === 'All' || log.name === adminStudentFilter) && (adminUnitFilter === 'All' || log.unit === adminUnitFilter));
+                return (
+                    <div className="max-w-5xl mx-auto p-6 animate-fadeIn">
+                        <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
+                            <h1 className="text-3xl font-black text-slate-900 italic tracking-tighter">DATA CENTER</h1>
+                            <div className="flex gap-2">
+                                <select className="bg-white border-2 border-indigo-100 text-indigo-600 px-4 py-2 rounded-xl text-xs font-black" value={adminStudentFilter} onChange={e => {setAdminStudentFilter(e.target.value); setAdminUnitFilter('All');}}>
+                                    <option value="All">所有學生</option>
+                                    {Object.keys(studentConfig).map(s => <option key={s} value={s}>{s}</option>)}
+                                </select>
+                                <select className="bg-white border-2 border-indigo-100 text-indigo-600 px-4 py-2 rounded-xl text-xs font-black" value={adminUnitFilter} onChange={e => setAdminUnitFilter(e.target.value)}>
+                                    <option value="All">所有單元</option>
+                                    {[...new Set(allLogs.map(l => l.unit))].map(u => <option key={u} value={u}>{u}</option>)}
+                                </select>
+                                <button onClick={() => setView('login')} className="bg-slate-900 text-white px-5 py-2 rounded-xl font-black text-xs uppercase">Exit</button>
+                            </div>
+                        </div>
+                        <div className="space-y-2">{filteredLogs.map(log => <RecordCard key={log.id} session={log} isAdminView={true} />)}</div>
                     </div>
                 );
             }
