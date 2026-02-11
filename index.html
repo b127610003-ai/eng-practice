@@ -7,7 +7,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-database-compat.js"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -46,7 +46,7 @@
 
         const students = Object.keys(studentPermissions);
 
-        // 這裡暫時共用題庫，若雨彤有新題庫，可以在此根據 selectedUnit 切換資料
+        // 題庫資料
         const quizData = [
             { id: 1, question: "The Great Wall is an _______ structure built thousands of years ago.", options: ["ancient", "antique", "previous", "precise"], correct: "ancient", explanation: "Ancient 指「古代的」。" },
             { id: 2, question: "Scientists are working hard to develop an _______ to the new virus.", options: ["ancestor", "antibody", "antonym", "antidote"], correct: "antibody", explanation: "Antibody 是「抗體」。" },
@@ -74,12 +74,11 @@
             const [sessionAnswers, setSessionAnswers] = useState([]);
             const startTimeRef = useRef(null);
 
-            // 當學生姓名改變時，更新可選單元
             useEffect(() => {
                 if (studentName && studentPermissions[studentName]) {
                     const units = studentPermissions[studentName];
                     setAvailableUnits(units);
-                    setSelectedUnit(units[0]); // 預設選取第一個專屬單元
+                    setSelectedUnit(units[0]);
                 } else {
                     setAvailableUnits([]);
                     setSelectedUnit('');
@@ -208,15 +207,13 @@
                 );
             }
 
-            // ... (其餘 dashboard_login, quiz, dashboard, admin_login 的程式碼邏輯保持不變，但在 admin 中 adminFilter 同樣使用學生清單) ...
-            
             if (view === 'dashboard_login' || view === 'admin_login') {
                 const isAdmin = view === 'admin_login';
                 return (
                     <div className="min-h-screen flex items-center justify-center p-6">
                         <div className="bg-white p-10 rounded-[3rem] shadow-xl w-full max-w-sm text-center">
                             <h2 className="font-black text-slate-800 text-xl mb-6 tracking-tighter uppercase italic">{isAdmin ? 'Teacher Access' : '身份驗證'}</h2>
-                            <p className="text-slate-400 text-xs mb-6 font-bold tracking-wide">請輸入密碼以進入{isAdmin ? '後台' : '儀表板'}</p>
+                            <p className="text-slate-400 text-xs mb-6 font-bold tracking-wide">請輸入密碼進入{isAdmin ? '後台' : '儀表板'}</p>
                             <input type="password" placeholder="Passcode" className="w-full p-5 bg-slate-50 rounded-2xl mb-4 border-2 border-transparent focus:border-indigo-500 outline-none text-center font-black tracking-[1em]"
                                 onKeyDown={e => e.key === 'Enter' && e.target.value === '1208' && setView(isAdmin ? 'admin' : 'dashboard')} autoFocus />
                             <button onClick={() => setView('login')} className="text-slate-300 font-black text-[10px] hover:text-indigo-500 uppercase">返回</button>
