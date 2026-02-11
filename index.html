@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>英文雲端測驗 - 修正版</title>
+    <title>英文雲端測驗 - 紀錄管理版</title>
     <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-database-compat.js"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -38,13 +38,11 @@
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // 學生與單元權限設定
         const studentPermissions = {
             "韋琳": ["2/8 單字測驗"],
             "雨彤": ["2/11 進階測驗"]
         };
 
-        // 韋琳 2/8 題庫 (根據 PDF 內容生成)
         const weiLinData = [
             { id: 1, question: "The pyramids are an _______ structure from ancient Egypt.", options: ["ancient", "previous", "precise", "present"], correct: "ancient", explanation: "Ancient 指「古代的」。" },
             { id: 2, question: "My _______ came from mainland China many years ago.", options: ["antonyms", "ancestors", "antibiotics", "antidotes"], correct: "ancestors", explanation: "Ancestor 是「祖先」。" },
@@ -52,13 +50,12 @@
             { id: 4, question: "The doctor gave him an _______ to counteract the poison.", options: ["antidote", "antonym", "antibiotic", "antibody"], correct: "antidote", explanation: "Antidote 是「解毒劑」。" },
             { id: 5, question: "I _______ that we will have a great time at the party.", options: ["anticipate", "precede", "preserve", "predict"], correct: "anticipate", explanation: "Anticipate 是「預期、期待」。" },
             { id: 6, question: "The body produces _______ to fight off viruses.", options: ["antibodies", "antibiotics", "antonyms", "ancestors"], correct: "antibodies", explanation: "Antibody 是「抗體」。" },
-            { id: 7, question: "We must take every _______ to stay safe.", options: ["precaution", "preference", "presence", "previous"], correct: "precaution", explanation: "Precaution 是「防範措施」。[cite: 5]" },
-            { id: 8, question: "It's hard to _______ who will win the game.", options: ["predict", "prevent", "prepare", "preserve"], correct: "predict", explanation: "Predict 是「預知、預測」。[cite: 5]" },
-            { id: 9, question: "He has a strong _______ for coffee over tea.", options: ["preference", "presence", "precaution", "previous"], correct: "preference", explanation: "Preference 是「偏好」。[cite: 6]" },
-            { id: 10, question: "Your _______ is required at the meeting.", options: ["presence", "present", "precede", "preserve"], correct: "presence", explanation: "Presence 是「出席、存在」。[cite: 6]" }
+            { id: 7, question: "We must take every _______ to stay safe.", options: ["precaution", "preference", "presence", "previous"], correct: "precaution", explanation: "Precaution 是「防範措施」。" },
+            { id: 8, question: "It's hard to _______ who will win the game.", options: ["predict", "prevent", "prepare", "preserve"], correct: "predict", explanation: "Predict 是「預知、預測」。" },
+            { id: 9, question: "He has a strong _______ for coffee over tea.", options: ["preference", "presence", "precaution", "previous"], correct: "preference", explanation: "Preference 是「偏好」。" },
+            { id: 10, question: "Your _______ is required at the meeting.", options: ["presence", "present", "precede", "preserve"], correct: "presence", explanation: "Presence 是「出席、存在」。" }
         ];
 
-        // 雨彤 2/11 題庫 (範例)
         const yuTongData = [
             { id: 1, question: "Example Question for YuTong 2/11", options: ["A", "B", "C", "D"], correct: "A", explanation: "雨彤專屬測試題。" }
         ];
@@ -77,14 +74,7 @@
             const [sessionAnswers, setSessionAnswers] = useState([]);
             const startTimeRef = useRef(null);
 
-            // 根據選擇的學生與單元切換題庫
-            const getQuizData = () => {
-                if (studentName === "韋琳") return weiLinData;
-                if (studentName === "雨彤") return yuTongData;
-                return [];
-            };
-
-            const quizData = getQuizData();
+            const quizData = studentName === "韋琳" ? weiLinData : (studentName === "雨彤" ? yuTongData : []);
 
             useEffect(() => {
                 if (studentName && studentPermissions[studentName]) {
@@ -110,6 +100,13 @@
                 });
                 return () => logsRef.off();
             }, []);
+
+            const deleteRecord = (id, e) => {
+                e.stopPropagation(); // 防止點擊垃圾桶時觸發展開卡片
+                if (window.confirm("⚠️ 確定要刪除這筆作答紀錄嗎？")) {
+                    db.ref(`quiz_sessions/${id}`).remove();
+                }
+            };
 
             const handleAnswer = (choice) => {
                 const endTime = Date.now();
@@ -164,9 +161,14 @@
                                     <p className="text-[10px] text-slate-300 font-bold uppercase tracking-tight">{session.timestamp}</p>
                                 </div>
                             </div>
-                            <div className="flex space-x-6 text-right">
+                            <div className="flex items-center space-x-4 text-right">
                                 <div><p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Score</p><p className={`font-black text-xl ${feedback.color}`}>{session.score}</p></div>
-                                <div className={`transition-transform self-center text-slate-300 ${isOpen ? 'rotate-180 text-indigo-400' : ''}`}>▼</div>
+                                <div className="flex flex-col items-center space-y-2">
+                                    <button onClick={(e) => deleteRecord(session.id, e)} className="p-2 hover:bg-red-50 text-red-300 hover:text-red-500 transition-colors rounded-lg">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                    </button>
+                                    <div className={`transition-transform text-slate-300 ${isOpen ? 'rotate-180 text-indigo-400' : ''}`}>▼</div>
+                                </div>
                             </div>
                         </div>
                         {isOpen && (
@@ -187,7 +189,6 @@
                 );
             };
 
-            // 畫面顯示邏輯
             if (view === 'login') {
                 return (
                     <div className="min-h-screen flex items-center justify-center bg-indigo-600 p-6">
@@ -267,7 +268,7 @@
                                         {Object.keys(studentPermissions).map(s => <option key={s} value={s}>{s}</option>)}
                                     </select>
                                 )}
-                                {isAdmin && <button onClick={() => { if(window.confirm("⚠️ 確定清空？")) db.ref('quiz_sessions').remove(); }} className="bg-red-50 text-red-500 px-4 py-2 rounded-xl text-[10px] font-black border border-red-100">CLEAR</button>}
+                                {isAdmin && <button onClick={() => { if(window.confirm("⚠️ 確定清空「所有學生」的紀錄嗎？此動作無法復原。")) db.ref('quiz_sessions').remove(); }} className="bg-red-50 text-red-500 px-4 py-2 rounded-xl text-[10px] font-black border border-red-100">CLEAR ALL</button>}
                                 <button onClick={() => { setView('login'); setExpandedId(null); }} className="bg-slate-900 text-white px-6 py-2 rounded-xl font-black text-[10px] uppercase shadow-lg">Back Home</button>
                             </div>
                         </div>
