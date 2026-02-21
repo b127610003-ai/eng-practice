@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EngQuiz Pro - Compact Admin</title>
+    <title>EngQuiz Pro - Full Display Admin</title>
     <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-database-compat.js"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -14,10 +14,10 @@
         @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
         body { font-family: 'Lexend', 'Noto Sans TC', sans-serif; background-color: #B2DAEE; min-height: 100vh; margin: 0; }
         .glass-card { background: rgba(255, 255, 255, 0.95); border-radius: 2.5rem; border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 20px 40px rgba(0,0,0,0.06); }
-        .inner-item-card { background: #FFFFFF; border-radius: 2rem; border: 1px solid #F1F5F9; }
+        .inner-item-card { background: #FFFFFF; border-radius: 2rem; border: 1px solid #F1F5F9; margin-bottom: 1.5rem; }
         .btn-indigo { background: #4F46E5; color: white; box-shadow: 0 4px 0 #3730A3; transition: all 0.1s; border-radius: 1.2rem; }
         .btn-indigo:active { transform: translateY(2px); box-shadow: 0 2px 0 #3730A3; }
-        .admin-select { background: white; border-radius: 2.5rem; padding: 1rem 2rem; font-weight: 800; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.05); outline: none; appearance: none; cursor: pointer; }
+        .admin-select { background: white; border-radius: 2.5rem; padding: 1rem 2.5rem; font-weight: 800; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.05); outline: none; appearance: none; cursor: pointer; }
         .label-status { font-size: 11px; font-weight: 900; padding: 4px 14px; border-radius: 8px; text-transform: uppercase; }
         .status-correct { background: #E6FFFA; color: #38B2AC; }
         .status-wrong { background: #FFF5F5; color: #F56565; }
@@ -115,23 +115,23 @@
             };
 
             const DetailSection = ({log}) => (
-                <div className="mt-8 space-y-6 border-t border-slate-100 pt-6">
+                <div className="mt-8 space-y-6 border-t border-slate-100 pt-8 animate-in fade-in duration-300">
                     {log.details.map((d, i) => {
                         const isWrong = d.type === 'vocabulary' && d.isCorrect === false;
                         return (
-                            <div key={i} className="inner-item-card p-6">
+                            <div key={i} className="inner-item-card p-8">
                                 <div className="flex justify-between items-center mb-4">
-                                    <span className="text-[10px] font-black text-slate-300">Q{i+1}</span>
+                                    <span className="text-[10px] font-black text-slate-300">QUESTION {i+1}</span>
                                     {d.type === 'vocabulary' && (
                                         <span className={`label-status ${d.isCorrect ? 'status-correct' : 'status-wrong'}`}>
                                             {d.isCorrect ? 'Correct' : 'Wrong'}
                                         </span>
                                     )}
                                 </div>
-                                <h4 className="text-lg font-bold mb-4 text-slate-800">{d.qText}</h4>
-                                <div className={`p-4 rounded-xl border ${isWrong ? 'box-wrong' : 'bg-slate-50 border-slate-100'}`}>
+                                <h4 className="text-xl font-bold mb-6 text-slate-800 leading-snug">{d.qText}</h4>
+                                <div className={`p-6 rounded-2xl border ${isWrong ? 'box-wrong' : 'bg-slate-50 border-slate-100'}`}>
                                     <p className={`text-[10px] font-black uppercase mb-1 ${isWrong ? 'text-rose-400' : 'text-indigo-400'}`}>學生答：</p>
-                                    <p className={`italic text-lg ${isWrong ? 'text-wrong' : 'font-black text-indigo-900'}`}>{d.choice}</p>
+                                    <p className={`font-black italic text-lg ${isWrong ? 'text-wrong' : 'text-indigo-900'}`}>{d.choice || "(無作答)"}</p>
                                 </div>
                             </div>
                         );
@@ -155,7 +155,7 @@
                         </div>
                         <button onClick={() => { if(student && unit) { setQuestions(QUIZ_DATA[student][unit]); setView('quiz'); setCurrentIdx(0); }}} className="w-full py-5 btn-indigo mb-6 font-black text-lg">START</button>
                         <button onClick={() => student && setView('record_auth')} className="w-full py-4 text-indigo-400 font-black text-[10px] uppercase tracking-widest border border-indigo-50 rounded-2xl mb-4">View Records</button>
-                        <button onClick={() => setView('admin_auth')} className="mt-4 text-slate-300 font-bold text-[10px] uppercase block w-full tracking-widest hover:text-indigo-600">Teacher Login</button>
+                        <button onClick={() => setView('admin_auth')} className="mt-4 text-slate-300 font-bold text-[10px] uppercase block w-full tracking-widest hover:text-indigo-600 transition-all">Teacher Login</button>
                     </div>
                 </div>
             );
@@ -166,7 +166,7 @@
                     <div className="min-h-screen flex items-center justify-center p-6">
                         <div className="glass-card p-12 w-full max-w-sm text-center">
                             <h2 className="text-2xl font-black mb-8 text-slate-700 uppercase">{isAdmin ? 'Teacher' : student}</h2>
-                            <input type="password" placeholder="PASSCODE" className="w-full p-5 rounded-2xl text-center font-black mb-8 bg-white border-2 border-indigo-50"
+                            <input type="password" placeholder="PASSCODE" className="w-full p-5 rounded-2xl text-center font-black mb-8 bg-white border-2 border-indigo-50 shadow-inner"
                                 onKeyDown={(e) => { if(e.key === 'Enter') {
                                     if(isAdmin && e.target.value === '1208') setView('admin');
                                     else if(!isAdmin && e.target.value === CONFIG[student].pass) setView('record');
@@ -182,11 +182,11 @@
                 const filteredLogs = allLogs.filter(l => l.name === adminStudent && l.unit === adminUnit);
                 return (
                     <div className="p-8 max-w-5xl mx-auto">
-                        <div className="flex justify-between items-center mb-6">
-                            <h1 className="text-5xl font-black text-indigo-900 italic tracking-tighter">ADMIN</h1>
-                            <button onClick={() => setView('home')} className="bg-slate-900 text-white px-6 py-2 rounded-xl font-black text-xs">EXIT</button>
+                        <div className="flex justify-between items-center mb-8">
+                            <h1 className="text-6xl font-black text-indigo-900 italic tracking-tighter">ADMIN</h1>
+                            <button onClick={() => setView('home')} className="bg-slate-900 text-white px-8 py-2 rounded-xl font-black text-xs uppercase tracking-widest">Exit</button>
                         </div>
-                        <div className="flex gap-4 mb-8">
+                        <div className="flex gap-4 mb-10">
                             <select className="admin-select flex-1" value={adminStudent} onChange={e => setAdminStudent(e.target.value)}>
                                 {Object.keys(CONFIG).map(n => <option key={n} value={n}>{n}</option>)}
                             </select>
@@ -195,15 +195,15 @@
                             </select>
                         </div>
                         
-                        <div className="space-y-4">
-                            {filteredLogs.length === 0 ? <p className="text-center text-slate-400 font-bold py-12 glass-card">無紀錄</p> : filteredLogs.map(log => (
-                                <div key={log.id} className="glass-card p-8 transition-all">
-                                    <div className="flex justify-between items-center cursor-pointer" onClick={() => setExpandedLog(expandedLog === log.id ? null : log.id)}>
-                                        <div>
-                                            <h3 className="text-2xl font-black text-slate-800">{log.name} - {log.unit}</h3>
-                                            <p className="text-xs font-bold text-slate-400">{log.date} | {log.timestamp}</p>
+                        <div className="space-y-6">
+                            {filteredLogs.length === 0 ? <p className="text-center text-slate-400 font-bold py-16 glass-card">目前尚無作答紀錄</p> : filteredLogs.map(log => (
+                                <div key={log.id} className="glass-card p-10 transition-all duration-300 overflow-hidden">
+                                    <div className="flex justify-between items-start cursor-pointer" onClick={() => setExpandedLog(expandedLog === log.id ? null : log.id)}>
+                                        <div className="flex-1">
+                                            <h3 className="text-3xl font-black text-slate-800 tracking-tight">{log.name} - {log.unit}</h3>
+                                            <p className="text-sm font-bold text-slate-400 mt-1 uppercase">{log.date} | {log.timestamp}</p>
                                         </div>
-                                        <button onClick={(e) => { e.stopPropagation(); if(confirm('確定刪除？')) db.ref('quiz_sessions/'+log.id).remove(); }} className="text-rose-500 font-black text-[10px] bg-rose-50 px-4 py-2 rounded-xl uppercase">Delete</button>
+                                        <button onClick={(e) => { e.stopPropagation(); if(confirm('確定刪除此紀錄？')) db.ref('quiz_sessions/'+log.id).remove(); }} className="text-rose-500 font-black text-[10px] bg-rose-50 px-6 py-2 rounded-xl uppercase tracking-widest hover:bg-rose-100 transition-colors">Delete</button>
                                     </div>
                                     {expandedLog === log.id && <DetailSection log={log} />}
                                 </div>
@@ -217,12 +217,12 @@
                 const logs = allLogs.filter(l => l.name === student);
                 return (
                     <div className="max-w-4xl mx-auto p-10">
-                        <div className="flex justify-between items-center mb-8">
-                            <h1 className="text-4xl font-black italic uppercase tracking-tighter">History</h1>
-                            <button onClick={() => setView('home')} className="bg-slate-900 text-white px-8 py-2 rounded-xl font-black text-xs">EXIT</button>
+                        <div className="flex justify-between items-center mb-10">
+                            <h1 className="text-4xl font-black italic uppercase tracking-tighter text-indigo-900">History</h1>
+                            <button onClick={() => setView('home')} className="bg-slate-900 text-white px-8 py-2 rounded-xl font-black text-xs uppercase">Exit</button>
                         </div>
-                        {logs.map(log => (
-                            <div key={log.id} className="glass-card p-8 mb-6 overflow-hidden">
+                        {logs.length === 0 ? <p className="text-center text-slate-400 font-bold py-16 glass-card">查無作答紀錄</p> : logs.map(log => (
+                            <div key={log.id} className="glass-card p-10 mb-8 overflow-hidden transition-all duration-300">
                                 <div className="cursor-pointer" onClick={() => setExpandedLog(expandedLog === log.id ? null : log.id)}>
                                     <h3 className="text-2xl font-black text-slate-800">{log.name} - {log.unit}</h3>
                                     <p className="text-xs font-bold text-slate-400 mt-1">{log.date} | {log.timestamp}</p>
