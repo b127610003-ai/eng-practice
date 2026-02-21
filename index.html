@@ -39,34 +39,7 @@
 
         const CONFIG = {
             "韋琳": { units: ["2/8 單字測驗"], pass: "1224" },
-            "雨彤": { units: ["2/13 圖表作文翻譯"，"2/24 L1單字前測"], pass: "8888" }
-        };
-
-        const QUESTION_BANK = {
-            "韋琳": [
-                { id: 1, question: "The pyramids are an _______ structure from ancient Egypt.", options: ["ancient", "previous", "precise", "present"], correct: "ancient", type: "vocabulary", desc: "Ancient 意指『古代的』。" },
-                { id: 2, question: "My _______ came from mainland China many years ago.", options: ["antonyms", "ancestors", "antibiotics", "antidotes"], correct: "ancestors", type: "vocabulary", desc: "Ancestors 指『祖先』。" },
-                { id: 3, question: "The shop sells many _______ pieces of furniture from the 19th century.", options: ["antique", "anticipate", "antonym", "ancestor"], correct: "antique", type: "vocabulary", desc: "Antique 指『古董的』。" },
-                { id: 4, question: "Our bodies produce _______ to fight off infections.", options: ["ancient", "ancestors", "antique", "antibodies"], correct: "antibodies", type: "vocabulary", desc: "Antibodies 指『抗體』。" },
-                { id: 5, question: "It's hard to _______ exactly what will happen in the future.", options: ["predict", "precaution", "preference", "presence"], correct: "predict", type: "vocabulary", desc: "Predict 是『預測』。" },
-                { id: 6, question: "Scientists are studying how the _______ react to the new virus.", options: ["antibodies", "ancestors", "antonyms", "antiques"], correct: "antibodies", type: "vocabulary", desc: "對抗病毒的是『抗體』。" },
-                { id: 7, question: "As a _______, you should wear a helmet when riding a bike.", options: ["precaution", "prediction", "preference", "presence"], correct: "precaution", type: "vocabulary", desc: "Precaution 是『預防措施』。" },
-                { id: 8, question: "Weather forecasters _______ that it will rain tomorrow.", options: ["predict", "prefer", "present", "precede"], correct: "predict", type: "vocabulary", desc: "氣象員負責『預測』。" },
-                { id: 9, question: "Do you have a _______ for tea or coffee?", options: ["preference", "precaution", "prediction", "presence"], correct: "preference", type: "vocabulary", desc: "Preference 是『偏好』。" },
-                { id: 10, question: "Your _______ is requested at the meeting this afternoon.", options: ["presence", "preference", "precaution", "prediction"], correct: "presence", type: "vocabulary", desc: "Presence 是『出席』。" }
-            ],
-            "雨彤": [
-                { id: 11, question: "根據這份圓餅圖，超過一半的受訪者表示他們每天花超過三小時在社交媒體上。", type: "translation" },
-                { id: 12, question: "從 2020 年到 2024 年，使用外送平台的人數呈現顯著的增長。", type: "translation" },
-                { id: 13, question: "這份長條圖比較了不同年齡層在休閒活動上的偏好。", type: "translation" },
-                { id: 14, question: "數據顯示，雖然閱讀人數在下降，但聽電子書的比例卻在上升。", type: "translation" },
-                { id: 15, question: "相較於男生，女生在選擇大學專業時更傾向於考慮未來就業前景。", type: "translation" },
-                { id: 16, question: "在所有的運動項目中，籃球最受歡迎，佔了總數的百分之四十。", type: "translation" },
-                { id: 17, question: "這兩項因素之間的差距在過去兩年內逐漸縮小。", type: "translation" },
-                { id: 18, question: "值得注意的是，偏好線上購物的人數幾乎是偏好實體店面的人數的兩倍。", type: "translation" },
-                { id: 19, question: "總之，這項調查反映出當代青少年對睡眠不足問題的擔憂。", type: "translation" },
-                { id: 20, question: "我們可以從圖表中推論出，便利性是影響消費者行為的最主要因素。", type: "translation" }
-            ]
+            "雨彤": { units: ["2/13 圖表作文翻譯", "2/24 L1單字前測"], pass: "8888" }
         };
 
         function App() {
@@ -83,10 +56,20 @@
             const [tempGrade, setTempGrade] = useState({});
             const [adminStudent, setAdminStudent] = useState('');
             const [adminUnit, setAdminUnit] = useState('');
+            
+            // 新增：儲存外部 JSON 題目
+            const [allData, setAllData] = useState(null);
+            const [questions, setQuestions] = useState([]);
 
             const startTimeRef = useRef(null);
 
             useEffect(() => {
+                // 讀取外部題目檔案
+                fetch('questions.json')
+                    .then(res => res.json())
+                    .then(data => setAllData(data))
+                    .catch(err => console.error("題庫載入失敗:", err));
+
                 const ref = db.ref('quiz_sessions');
                 ref.on('value', (s) => setAllLogs(s.val() ? Object.entries(s.val()).map(([id, v]) => ({ id, ...v })).reverse() : []));
                 return () => ref.off();
@@ -109,12 +92,16 @@
             };
 
             const findCorrectAnswer = (studentName, qText) => {
-                const q = QUESTION_BANK[studentName]?.find(item => item.question === qText);
-                return q ? q.correct : "未找到答案";
+                if (!allData || !allData[studentName]) return "未找到答案";
+                for (let unitKey in allData[studentName]) {
+                    const q = allData[studentName][unitKey].find(item => item.question === qText);
+                    if (q) return q.correct || "翻譯題無標準答案";
+                }
+                return "未找到答案";
             };
 
             const handleNext = () => {
-                const q = QUESTION_BANK[student][currentIdx];
+                const q = questions[currentIdx];
                 const timeStr = ((Date.now() - startTimeRef.current) / 1000).toFixed(1);
                 let entry = q.type === 'translation' ? 
                     { qText: q.question, choice: userInput.trim(), type: 'translation', manualScore: null, manualComment: null, timeTaken: timeStr } :
@@ -125,7 +112,7 @@
                 setFeedback(null);
                 setUserInput('');
 
-                if (currentIdx < QUESTION_BANK[student].length - 1) {
+                if (currentIdx < questions.length - 1) {
                     setCurrentIdx(currentIdx + 1);
                     startTimeRef.current = Date.now();
                 } else {
@@ -138,7 +125,6 @@
                 }
             };
 
-            // 視圖切換邏輯 (略，與原版一致)
             if (view === 'home') return (
                 <div className="min-h-screen flex items-center justify-center p-6 text-center">
                     <div className="glass-card p-10 w-full max-w-sm">
@@ -155,7 +141,14 @@
                                 {student && CONFIG[student].units.map(u => <option key={u} value={u}>{u}</option>)}
                             </select>
                         </div>
-                        <button onClick={() => student && unit && setView('quiz')} className="w-full py-4 btn-indigo mb-4 font-black uppercase text-lg tracking-widest">Start</button>
+                        <button onClick={() => {
+                            if(student && unit && allData) {
+                                setQuestions(allData[student][unit]);
+                                setView('quiz');
+                            } else {
+                                alert('題庫載入中或未選擇單元');
+                            }
+                        }} className="w-full py-4 btn-indigo mb-4 font-black uppercase text-lg tracking-widest">Start</button>
                         <button onClick={() => student && setView('auth')} className="w-full bg-white/80 text-indigo-600 py-4 rounded-xl font-black border border-indigo-100 uppercase text-sm">Record</button>
                         <button onClick={() => setView('admin_auth')} className="mt-8 text-indigo-900/30 text-[10px] font-bold uppercase block w-full">Admin Login</button>
                     </div>
@@ -182,10 +175,11 @@
 
             if (view === 'quiz') {
                 if (!startTimeRef.current) startTimeRef.current = Date.now();
-                const q = QUESTION_BANK[student][currentIdx];
+                const q = questions[currentIdx];
+                if (!q) return null;
                 return (
                     <div className="max-w-md mx-auto mt-12 p-8 glass-card">
-                        <div className="flex justify-between items-center mb-8"><span className="text-indigo-600 text-[10px] font-black uppercase tracking-widest">{unit}</span><span className="text-slate-400 font-black">{currentIdx+1} / 10</span></div>
+                        <div className="flex justify-between items-center mb-8"><span className="text-indigo-600 text-[10px] font-black uppercase tracking-widest">{unit}</span><span className="text-slate-400 font-black">{currentIdx+1} / {questions.length}</span></div>
                         <h2 className="text-2xl font-black text-slate-800 mb-8 leading-snug">{q.question}</h2>
                         {q.type === 'translation' ? (
                             <><textarea className="w-full p-6 bg-white rounded-2xl font-bold h-44 mb-6 outline-none border-2 border-indigo-50 focus:border-indigo-400 shadow-inner" placeholder="在此輸入翻譯..." value={userInput} onChange={e => setUserInput(e.target.value)} /><button onClick={handleNext} className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black uppercase shadow-xl tracking-widest">Submit</button></>
@@ -209,7 +203,6 @@
             }
 
             if (view === 'record') {
-                // 核心邏輯：根據單元名稱分流
                 const myLogs = allLogs.filter(l => l.name === student);
                 const filteredLogs = myLogs.filter(l => {
                     if (activeTab === 'VOCABULARY') return l.unit.includes("單字");
@@ -366,4 +359,3 @@
     </script>
 </body>
 </html>
-
