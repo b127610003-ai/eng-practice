@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EngQuiz Pro - Admin Smart Detail</title>
+    <title>EngQuiz Pro - Sync Version</title>
     <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-database-compat.js"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -41,47 +41,44 @@
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+        // 指定保留的單元
         const CONFIG = {
-            "韋琳": { units: ["2/8 單字測驗"], pass: "1224" },
-            "雨彤": { units: ["2/13 圖表作文翻譯", "2/24 L1單字前測"], pass: "8888" }
+            "韋琳": { units: ["3/1 L1單字前測"], pass: "1224" },
+            "雨彤": { units: ["2/24 L1單字前測"], pass: "8888" }
         };
 
+        // 共用的 25 題題目
+        const COMMON_QUESTIONS = [
+            { type: "vocabulary", question: "The suspect’s ______ to have been at home during the crime was debunked by the city's surveillance cameras.", options: ["intention", "claim", "property", "volume"], correct: "claim", desc: "Claim 指「聲稱/主張」。" },
+            { type: "vocabulary", question: "Despite the overwhelming evidence against him, the defendant ______ that he had been framed by his business partner.", options: ["insisted", "surrendered", "devoured", "abandoned"], correct: "insisted", desc: "Insist 指在受到質疑時仍「堅持」說法。" },
+            { type: "vocabulary", question: "The lawyer warned that any violation of the contract would result in a severe financial ______.", options: ["wealth", "guilt", "penalty", "companion"], correct: "penalty", desc: "Penalty 指「罰則/違約金」。" },
+            { type: "vocabulary", question: "Scientists are fascinated by the unique ______ of the newly discovered mineral, which can change color based on temperature.", options: ["acquisitions", "rumors", "intentions", "properties"], correct: "properties", desc: "Properties 此處指物質的「特性/性質」。" },
+            { type: "vocabulary", question: "The detective spent the night pacing ______ in his study, trying to make sense of the conflicting testimonies.", options: ["around the clock", "back and forth", "by no means", "in vain"], correct: "back and forth", desc: "Back and forth 指來回走動。" },
+            { type: "vocabulary", question: "After months of hiding in the mountains, the rebel leader finally decided to ______ to the government forces.", options: ["acquire", "surrender", "insist", "claim"], correct: "surrender", desc: "Surrender 向警方或軍方「投降」。" },
+            { type: "vocabulary", question: "The novelist’s latest work had a ______ impact on modern literature, changing how authors approach character development.", options: ["profound", "wealthy", "mental", "vain"], correct: "profound", desc: "Profound 形容影響「深遠」。" },
+            { type: "vocabulary", question: "The company is famous for its aggressive ______ of smaller startups to maintain its dominance in the tech industry.", options: ["intention", "acquisition", "imprisonment", "property"], correct: "acquisition", desc: "Acquisition 商業術語「收購」。" },
+            { type: "vocabulary", question: "He made a ______ attempt to rescue his belongings from the burning house, but the flames were too intense.", options: ["profound", "wealthy", "mental", "vain"], correct: "vain", desc: "Vain attempt 指徒勞無功的嘗試。" },
+            { type: "vocabulary", question: "The library houses a rare twenty-______ collection of ancient maps that are off-limits to the general public.", options: ["volume", "penalty", "rumor", "guilt"], correct: "volume", desc: "Volume 此處指套書的「卷/冊」。" },
+            { type: "vocabulary", question: "Even though she was cleared of all charges, she still carried a heavy sense of ______ for the accident.", options: ["wealth", "property", "guilt", "companion"], correct: "guilt", desc: "Guilt 指內心的「罪惡感」。" },
+            { type: "vocabulary", question: "The ______ was sentenced to life imprisonment without the possibility of parole.", options: ["acquisition", "murderer", "intention", "prisoner"], correct: "murderer", desc: "被判兇手。" },
+            { type: "vocabulary", question: "It never ______ that the quiet neighbor could be involved in such a massive financial scandal.", options: ["made clear", "wore on", "crossed his mind", "by no means"], correct: "crossed his mind", desc: "腦中閃過想法。" },
+            { type: "vocabulary", question: "To ______ a high level of fluency in a foreign language, one must practice consistently for years.", options: ["abandon", "acquire", "worship", "devour"], correct: "acquire", desc: "習得。" },
+            { type: "vocabulary", question: "The public ______ regarding the death penalty has been ongoing for decades with no clear consensus.", options: ["debate", "rumor", "volume", "intention"], correct: "debate", desc: "公開辯論。" },
+            { type: "vocabulary", question: "The rescue operation continued ______ as teams refused to give up hope of finding survivors.", options: ["back and forth", "by no means", "around the clock", "the fruits of"], correct: "around the clock", desc: "24小時不停。" },
+            { type: "vocabulary", question: "The project was ______ a failure; in fact, it provided valuable data for our future research.", options: ["in vain", "by no means", "around the clock", "wearing on"], correct: "by no means", desc: "絕非。" },
+            { type: "vocabulary", question: "As the long winter ______, the villagers began to run low on food and supplies.", options: ["made clear", "wore on", "crossed minds", "abandoned"], correct: "wore on", desc: "時間流逝。" },
+            { type: "vocabulary", question: "The CEO ______ that the safety of the workers must be the company's top priority.", options: ["made it clear", "crossed his mind", "surrendered", "devoured"], correct: "made it clear", desc: "明確表示。" },
+            { type: "vocabulary", question: "After years of sacrifice, the scientist is finally starting to see ______ his labor.", options: ["the rumors of", "the fruits of", "the penalties of", "the volumes of"], correct: "the fruits of", desc: "成果。" },
+            { type: "vocabulary", question: "The stray cat, having not eaten for days, ______ the bowl of milk in seconds.", options: ["insisted", "worshiped", "devoured", "abandoned"], correct: "devoured", desc: "狼吞虎嚥。" },
+            { type: "vocabulary", question: "Maintaining a healthy lifestyle is essential for both your physical and ______ well-being.", options: ["profound", "wealthy", "mental", "intentional"], correct: "mental", desc: "心理健康。" },
+            { type: "vocabulary", question: "The ancient tribe used to ______ the sun as their primary deity.", options: ["claim", "worship", "surrender", "acquire"], correct: "worship", desc: "崇拜。" },
+            { type: "vocabulary", question: "Leaving the campfire burning when you leave the site is a dangerous and ______ act of negligence.", options: ["intentional", "unintentional", "intense", "internal"], correct: "intentional", desc: "故意的。" },
+            { type: "vocabulary", question: "The ______ of his estate was distributed among several local charities after he passed away.", options: ["wealth", "guilt", "rumor", "penalty"], correct: "wealth", desc: "財富/遺產。" }
+        ];
+
         const QUIZ_DATA = {
-            "韋琳": { "2/8 單字測驗": [
-                { type: "vocabulary", question: "The pyramids are an ________ structure from ancient Egypt.", options: ["ancient", "ancestors", "antique", "annual"], correct: "ancient", desc: "Ancient 形容極其古老的。" },
-                { type: "vocabulary", question: "My ________ came from mainland China many years ago.", options: ["ancient", "ancestors", "antique", "annual"], correct: "ancestors", desc: "Ancestors 指祖先。" },
-                { type: "vocabulary", question: "The shop sells many ________ pieces of furniture from the 19th century.", options: ["ancient", "ancestors", "antique", "annual"], correct: "antique", desc: "Antique 指古董。" }
-            ]},
-            "雨彤": {
-                "2/13 圖表作文翻譯": [{ type: "translation", question: "請翻譯：這張圖表顯示了過去十年的氣溫變化。" }],
-                "2/24 L1單字前測": [
-                    { type: "vocabulary", question: "The suspect’s ______ to have been at home during the crime was debunked by the city's surveillance cameras.", options: ["intention", "claim", "property", "volume"], correct: "claim", desc: "Claim 指「聲稱/主張」。" },
-                    { type: "vocabulary", question: "Despite the overwhelming evidence against him, the defendant ______ that he had been framed by his business partner.", options: ["insisted", "surrendered", "devoured", "abandoned"], correct: "insisted", desc: "Insist 指在受到質疑時仍「堅持」說法。" },
-                    { type: "vocabulary", question: "The lawyer warned that any violation of the contract would result in a severe financial ______.", options: ["wealth", "guilt", "penalty", "companion"], correct: "penalty", desc: "Penalty 指「罰則/違約金」。" },
-                    { type: "vocabulary", question: "Scientists are fascinated by the unique ______ of the newly discovered mineral, which can change color based on temperature.", options: ["acquisitions", "rumors", "intentions", "properties"], correct: "properties", desc: "Properties 此處指物質的「特性/性質」。" },
-                    { type: "vocabulary", question: "The detective spent the night pacing ______ in his study, trying to make sense of the conflicting testimonies.", options: ["around the clock", "back and forth", "by no means", "in vain"], correct: "back and forth", desc: "Back and forth 指來回走動。" },
-                    { type: "vocabulary", question: "After months of hiding in the mountains, the rebel leader finally decided to ______ to the government forces.", options: ["acquire", "surrender", "insist", "claim"], correct: "surrender", desc: "Surrender 向警方或軍方「投降」。" },
-                    { type: "vocabulary", question: "The novelist’s latest work had a ______ impact on modern literature, changing how authors approach character development.", options: ["profound", "wealthy", "mental", "vain"], correct: "profound", desc: "Profound 形容影響「深遠」。" },
-                    { type: "vocabulary", question: "The company is famous for its aggressive ______ of smaller startups to maintain its dominance in the tech industry.", options: ["intention", "acquisition", "imprisonment", "property"], correct: "acquisition", desc: "Acquisition 商業術語「收購」。" },
-                    { type: "vocabulary", question: "He made a ______ attempt to rescue his belongings from the burning house, but the flames were too intense.", options: ["profound", "wealthy", "mental", "vain"], correct: "vain", desc: "Vain attempt 指徒勞無功的嘗試。" },
-                    { type: "vocabulary", question: "The library houses a rare twenty-______ collection of ancient maps that are off-limits to the general public.", options: ["volume", "penalty", "rumor", "guilt"], correct: "volume", desc: "Volume 此處指套書的「卷/冊」。" },
-                    { type: "vocabulary", question: "Even though she was cleared of all charges, she still carried a heavy sense of ______ for the accident.", options: ["wealth", "property", "guilt", "companion"], correct: "guilt", desc: "Guilt 指內心的「罪惡感」。" },
-                    { type: "vocabulary", question: "The ______ was sentenced to life imprisonment without the possibility of parole.", options: ["acquisition", "murderer", "intention", "prisoner"], correct: "murderer", desc: "被判兇手。" },
-                    { type: "vocabulary", question: "It never ______ that the quiet neighbor could be involved in such a massive financial scandal.", options: ["made clear", "wore on", "crossed his mind", "by no means"], correct: "crossed his mind", desc: "腦中閃過想法。" },
-                    { type: "vocabulary", question: "To ______ a high level of fluency in a foreign language, one must practice consistently for years.", options: ["abandon", "acquire", "worship", "devour"], correct: "acquire", desc: "習得。" },
-                    { type: "vocabulary", question: "The public ______ regarding the death penalty has been ongoing for decades with no clear consensus.", options: ["debate", "rumor", "volume", "intention"], correct: "debate", desc: "公開辯論。" },
-                    { type: "vocabulary", question: "The rescue operation continued ______ as teams refused to give up hope of finding survivors.", options: ["back and forth", "by no means", "around the clock", "the fruits of"], correct: "around the clock", desc: "24小時不停。" },
-                    { type: "vocabulary", question: "The project was ______ a failure; in fact, it provided valuable data for our future research.", options: ["in vain", "by no means", "around the clock", "wearing on"], correct: "by no means", desc: "絕非。" },
-                    { type: "vocabulary", question: "As the long winter ______, the villagers began to run low on food and supplies.", options: ["made clear", "wore on", "crossed minds", "abandoned"], correct: "wore on", desc: "時間流逝。" },
-                    { type: "vocabulary", question: "The CEO ______ that the safety of the workers must be the company's top priority.", options: ["made it clear", "crossed his mind", "surrendered", "devoured"], correct: "made it clear", desc: "明確表示。" },
-                    { type: "vocabulary", question: "After years of sacrifice, the scientist is finally starting to see ______ his labor.", options: ["the rumors of", "the fruits of", "the penalties of", "the volumes of"], correct: "the fruits of", desc: "成果。" },
-                    { type: "vocabulary", question: "The stray cat, having not eaten for days, ______ the bowl of milk in seconds.", options: ["insisted", "worshiped", "devoured", "abandoned"], correct: "devoured", desc: "狼吞虎嚥。" },
-                    { type: "vocabulary", question: "Maintaining a healthy lifestyle is essential for both your physical and ______ well-being.", options: ["profound", "wealthy", "mental", "intentional"], correct: "mental", desc: "心理健康。" },
-                    { type: "vocabulary", question: "The ancient tribe used to ______ the sun as their primary deity.", options: ["claim", "worship", "surrender", "acquire"], correct: "worship", desc: "崇拜。" },
-                    { type: "vocabulary", question: "Leaving the campfire burning when you leave the site is a dangerous and ______ act of negligence.", options: ["intentional", "unintentional", "intense", "internal"], correct: "intentional", desc: "故意的。" },
-                    { type: "vocabulary", question: "The ______ of his estate was distributed among several local charities after he passed away.", options: ["wealth", "guilt", "rumor", "penalty"], correct: "wealth", desc: "財富/遺產。" }
-                ]
-            }
+            "韋琳": { "3/1 L1單字前測": COMMON_QUESTIONS },
+            "雨彤": { "2/24 L1單字前測": COMMON_QUESTIONS }
         };
 
         function App() {
@@ -89,7 +86,7 @@
             const [student, setStudent] = useState('');
             const [unit, setUnit] = useState('');
             const [adminStudent, setAdminStudent] = useState('韋琳');
-            const [adminUnit, setAdminUnit] = useState('2/8 單字測驗');
+            const [adminUnit, setAdminUnit] = useState('3/1 L1單字前測');
             const [allLogs, setAllLogs] = useState([]);
             const [currentIdx, setCurrentIdx] = useState(0);
             const [sessionAnswers, setSessionAnswers] = useState([]);
@@ -104,13 +101,6 @@
                 return () => ref.off();
             }, []);
 
-            const getCorrectAnswer = (sName, uName, qText) => {
-                const unitData = QUIZ_DATA[sName]?.[uName];
-                if (!unitData) return "...";
-                const qObj = unitData.find(q => q.question === qText);
-                return qObj ? qObj.correct : "...";
-            };
-
             const handleNext = () => {
                 if (!questions[currentIdx]) return;
                 const q = questions[currentIdx];
@@ -121,45 +111,47 @@
                 else { db.ref('quiz_sessions').push({ name: student, unit, date: new Date().toLocaleDateString(), timestamp: new Date().toLocaleTimeString('zh-TW', {hour12: true}), details: updated }); setView('home'); setCurrentIdx(0); setSessionAnswers([]); }
             };
 
-            const DetailSection = ({log}) => (
-                <div className="mt-8 space-y-6 border-t border-slate-100 pt-8">
-                    {log.details.map((d, i) => {
-                        const isWrong = d.type === 'vocabulary' && d.isCorrect === false;
-                        const correctAnswer = getCorrectAnswer(log.name, log.unit, d.qText);
-                        return (
-                            <div key={i} className="inner-item-card p-8">
-                                <div className="flex justify-between items-center mb-4">
-                                    <span className="text-[10px] font-black text-slate-300">QUESTION {i+1}</span>
-                                    {d.type === 'vocabulary' && (
-                                        <span className={`label-status ${d.isCorrect ? 'status-correct' : 'status-wrong'}`}>
-                                            {d.isCorrect ? 'Correct' : 'Wrong'}
-                                        </span>
-                                    )}
-                                </div>
-                                <h4 className="text-xl font-bold mb-6 text-slate-800 leading-snug">{d.qText}</h4>
-                                <div className="space-y-3">
-                                    <div className={`p-6 rounded-2xl border ${isWrong ? 'box-wrong' : 'bg-slate-50 border-slate-100'}`}>
-                                        <p className={`text-[10px] font-black uppercase mb-1 ${isWrong ? 'text-rose-400' : 'text-indigo-400'}`}>學生答：</p>
-                                        <p className={`font-black italic text-lg ${isWrong ? 'text-wrong' : 'text-indigo-900'}`}>{d.choice || "(無作答)"}</p>
+            const DetailSection = ({log}) => {
+                const unitData = QUIZ_DATA[log.name]?.[log.unit] || [];
+                return (
+                    <div className="mt-8 space-y-6 border-t border-slate-100 pt-8">
+                        {log.details.map((d, i) => {
+                            const isWrong = d.type === 'vocabulary' && d.isCorrect === false;
+                            const qObj = unitData.find(q => q.question === d.qText);
+                            const correctAnswer = qObj ? qObj.correct : "N/A";
+                            return (
+                                <div key={i} className="inner-item-card p-8">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <span className="text-[10px] font-black text-slate-300">QUESTION {i+1}</span>
+                                        {d.type === 'vocabulary' && (
+                                            <span className={`label-status ${d.isCorrect ? 'status-correct' : 'status-wrong'}`}>
+                                                {d.isCorrect ? 'Correct' : 'Wrong'}
+                                            </span>
+                                        )}
                                     </div>
-                                    
-                                    {/* 只有答錯時才顯示正確答案區塊 */}
-                                    {isWrong && (
-                                        <div className="p-6 rounded-2xl border bg-emerald-50 border-emerald-100">
-                                            <p className="text-[10px] font-black uppercase mb-1 text-emerald-400">正確答案：</p>
-                                            <p className="font-black italic text-lg text-emerald-700">{correctAnswer}</p>
+                                    <h4 className="text-xl font-bold mb-6 text-slate-800 leading-snug">{d.qText}</h4>
+                                    <div className="space-y-3">
+                                        <div className={`p-6 rounded-2xl border ${isWrong ? 'box-wrong' : 'bg-slate-50 border-slate-100'}`}>
+                                            <p className={`text-[10px] font-black uppercase mb-1 ${isWrong ? 'text-rose-400' : 'text-indigo-400'}`}>學生答：</p>
+                                            <p className={`font-black italic text-lg ${isWrong ? 'text-wrong' : 'text-indigo-900'}`}>{d.choice || "(無作答)"}</p>
                                         </div>
-                                    )}
+                                        {isWrong && (
+                                            <div className="p-6 rounded-2xl border bg-emerald-50 border-emerald-100">
+                                                <p className="text-[10px] font-black uppercase mb-1 text-emerald-400">正確答案：</p>
+                                                <p className="font-black italic text-lg text-emerald-700">{correctAnswer}</p>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            );
+                            );
+                        })}
+                    </div>
+                );
+            };
 
             if (view === 'home') return (
                 <div className="min-h-screen flex items-center justify-center p-6 text-center">
-                    <div className="glass-card p-12 w-full max-w-sm">
+                    <div className="glass-card p-12 w-full max-sm:px-6 max-w-sm">
                         <h1 className="text-5xl font-black text-indigo-600 mb-10 italic tracking-tighter">EngQuiz</h1>
                         <div className="space-y-4 mb-10">
                             <select className="w-full p-5 rounded-2xl font-black bg-white border border-indigo-50 shadow-sm" value={student} onChange={e => {setStudent(e.target.value); setUnit('');}}>
@@ -173,7 +165,7 @@
                         </div>
                         <button onClick={() => { if(student && unit) { setQuestions(QUIZ_DATA[student][unit]); setView('quiz'); setCurrentIdx(0); }}} className="w-full py-5 btn-indigo mb-6 font-black text-lg">START</button>
                         <button onClick={() => student && setView('record_auth')} className="w-full py-4 text-indigo-400 font-black text-[10px] uppercase tracking-widest border border-indigo-50 rounded-2xl mb-4">View Records</button>
-                        <button onClick={() => setView('admin_auth')} className="mt-4 text-slate-300 font-bold text-[10px] uppercase block w-full tracking-widest hover:text-indigo-600">Teacher Login</button>
+                        <button onClick={() => setView('admin_auth')} className="mt-4 text-slate-300 font-bold text-[10px] uppercase block w-full tracking-widest hover:text-indigo-600 transition-all">Teacher Login</button>
                     </div>
                 </div>
             );
@@ -197,31 +189,27 @@
             }
 
             if (view === 'admin') {
-                const filteredLogs = allLogs.filter(l => l.name === adminStudent && l.unit === adminUnit);
+                const filteredLogs = allLogs.filter(l => l.name === adminStudent);
                 return (
                     <div className="p-8 max-w-5xl mx-auto">
                         <div className="flex justify-between items-center mb-8">
                             <h1 className="text-6xl font-black text-indigo-900 italic tracking-tighter">ADMIN</h1>
-                            <button onClick={() => setView('home')} className="bg-slate-900 text-white px-8 py-2 rounded-xl font-black text-xs uppercase">Exit</button>
+                            <button onClick={() => setView('home')} className="bg-slate-900 text-white px-8 py-2 rounded-xl font-black text-xs uppercase tracking-widest">Exit</button>
                         </div>
-                        <div className="flex gap-4 mb-8">
-                            <select className="admin-select flex-1" value={adminStudent} onChange={e => setAdminStudent(e.target.value)}>
+                        <div className="mb-10">
+                            <select className="admin-select w-full" value={adminStudent} onChange={e => setAdminStudent(e.target.value)}>
                                 {Object.keys(CONFIG).map(n => <option key={n} value={n}>{n}</option>)}
                             </select>
-                            <select className="admin-select flex-1" value={adminUnit} onChange={e => setAdminUnit(e.target.value)}>
-                                {adminStudent && CONFIG[adminStudent].units.map(u => <option key={u} value={u}>{u}</option>)}
-                            </select>
                         </div>
-                        
                         <div className="space-y-6">
                             {filteredLogs.length === 0 ? <p className="text-center text-slate-400 font-bold py-16 glass-card">目前尚無作答紀錄</p> : filteredLogs.map(log => (
                                 <div key={log.id} className="glass-card p-10 overflow-hidden">
                                     <div className="flex justify-between items-start cursor-pointer" onClick={() => setExpandedLog(expandedLog === log.id ? null : log.id)}>
                                         <div>
-                                            <h3 className="text-3xl font-black text-slate-800">{log.name} - {log.unit}</h3>
+                                            <h3 className="text-3xl font-black text-slate-800 tracking-tight">{log.name} - {log.unit}</h3>
                                             <p className="text-sm font-bold text-slate-400 mt-1 uppercase">{log.date} | {log.timestamp}</p>
                                         </div>
-                                        <button onClick={(e) => { e.stopPropagation(); if(confirm('確定刪除此紀錄？')) db.ref('quiz_sessions/'+log.id).remove(); }} className="text-rose-500 font-black text-[10px] bg-rose-50 px-6 py-2 rounded-xl uppercase tracking-widest">Delete</button>
+                                        <button onClick={(e) => { e.stopPropagation(); if(confirm('確定刪除此紀錄？')) db.ref('quiz_sessions/'+log.id).remove(); }} className="text-rose-500 font-black text-[10px] bg-rose-50 px-6 py-2 rounded-xl uppercase tracking-widest hover:bg-rose-100 transition-colors">Delete</button>
                                     </div>
                                     {expandedLog === log.id && <DetailSection log={log} />}
                                 </div>
@@ -231,12 +219,33 @@
                 );
             }
 
+            if (view === 'record') {
+                const logs = allLogs.filter(l => l.name === student);
+                return (
+                    <div className="max-w-4xl mx-auto p-10">
+                        <div className="flex justify-between items-center mb-10">
+                            <h1 className="text-4xl font-black italic uppercase tracking-tighter text-indigo-900">History</h1>
+                            <button onClick={() => setView('home')} className="bg-slate-900 text-white px-8 py-2 rounded-xl font-black text-xs uppercase">Exit</button>
+                        </div>
+                        {logs.map(log => (
+                            <div key={log.id} className="glass-card p-10 mb-8 overflow-hidden">
+                                <div className="cursor-pointer" onClick={() => setExpandedLog(expandedLog === log.id ? null : log.id)}>
+                                    <h3 className="text-2xl font-black text-slate-800">{log.name} - {log.unit}</h3>
+                                    <p className="text-xs font-bold text-slate-400 mt-1">{log.date} | {log.timestamp}</p>
+                                </div>
+                                {expandedLog === log.id && <DetailSection log={log} />}
+                            </div>
+                        ))}
+                    </div>
+                );
+            }
+
             if (view === 'quiz') {
                 const q = questions[currentIdx];
                 return (
                     <div className="max-w-xl mx-auto mt-20 p-10 glass-card">
-                        <div className="flex justify-between items-center mb-10"><span className="text-indigo-600 text-xs font-black uppercase tracking-widest">{unit}</span><span className="text-slate-300 font-black">{currentIdx+1} / {questions.length}</span></div>
-                        <h2 className="text-3xl font-black text-slate-800 mb-10 leading-snug">{q.question}</h2>
+                        <div className="flex justify-between items-center mb-10 max-sm:mb-6"><span className="text-indigo-600 text-xs font-black uppercase tracking-widest">{unit}</span><span className="text-slate-300 font-black">{currentIdx+1} / {questions.length}</span></div>
+                        <h2 className="text-3xl font-black text-slate-800 mb-10 leading-snug max-sm:text-xl">{q.question}</h2>
                         <div className="space-y-4">
                             {q.type === 'vocabulary' ? (
                                 <>
