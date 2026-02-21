@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EngQuiz Pro - Full Admin Detail</title>
+    <title>EngQuiz Pro - Admin Smart Detail</title>
     <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-database-compat.js"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -23,7 +23,6 @@
         .status-wrong { background: #FFF5F5; color: #F56565; }
         .box-wrong { background: #FFF5F5 !important; border: 1px solid #FED7D7 !important; }
         .text-wrong { color: #E53E3E !important; font-weight: 900; }
-        .text-correct-label { color: #38B2AC !important; font-weight: 900; }
     </style>
 </head>
 <body>
@@ -42,7 +41,6 @@
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // 這裡維持你原本的所有 CONFIG 與 QUIZ_DATA 內容
         const CONFIG = {
             "韋琳": { units: ["2/8 單字測驗"], pass: "1224" },
             "雨彤": { units: ["2/13 圖表作文翻譯", "2/24 L1單字前測"], pass: "8888" }
@@ -106,7 +104,6 @@
                 return () => ref.off();
             }, []);
 
-            // 取得正確答案的輔助函數
             const getCorrectAnswer = (sName, uName, qText) => {
                 const unitData = QUIZ_DATA[sName]?.[uName];
                 if (!unitData) return "...";
@@ -145,10 +142,14 @@
                                         <p className={`text-[10px] font-black uppercase mb-1 ${isWrong ? 'text-rose-400' : 'text-indigo-400'}`}>學生答：</p>
                                         <p className={`font-black italic text-lg ${isWrong ? 'text-wrong' : 'text-indigo-900'}`}>{d.choice || "(無作答)"}</p>
                                     </div>
-                                    <div className="p-6 rounded-2xl border bg-emerald-50 border-emerald-100">
-                                        <p className="text-[10px] font-black uppercase mb-1 text-emerald-400">正確答案：</p>
-                                        <p className="font-black italic text-lg text-emerald-700">{correctAnswer}</p>
-                                    </div>
+                                    
+                                    {/* 只有答錯時才顯示正確答案區塊 */}
+                                    {isWrong && (
+                                        <div className="p-6 rounded-2xl border bg-emerald-50 border-emerald-100">
+                                            <p className="text-[10px] font-black uppercase mb-1 text-emerald-400">正確答案：</p>
+                                            <p className="font-black italic text-lg text-emerald-700">{correctAnswer}</p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         );
@@ -156,7 +157,6 @@
                 </div>
             );
 
-            // 首頁
             if (view === 'home') return (
                 <div className="min-h-screen flex items-center justify-center p-6 text-center">
                     <div className="glass-card p-12 w-full max-w-sm">
@@ -178,7 +178,6 @@
                 </div>
             );
 
-            // 認證介面
             if (view === 'admin_auth' || view === 'record_auth') {
                 const isAdmin = view === 'admin_auth';
                 return (
@@ -197,7 +196,6 @@
                 );
             }
 
-            // 管理介面
             if (view === 'admin') {
                 const filteredLogs = allLogs.filter(l => l.name === adminStudent && l.unit === adminUnit);
                 return (
@@ -233,7 +231,6 @@
                 );
             }
 
-            // 測驗介面
             if (view === 'quiz') {
                 const q = questions[currentIdx];
                 return (
